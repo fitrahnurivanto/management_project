@@ -1,0 +1,520 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Project;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class DashboardController extends Controller
+{
+    /**
+     * Display admin dashboard with omset overview.
+     */
+    public function adminDashboard(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $user = auth()->user();
+
+        // Filter parameters
+        $status = $request->get('status', 'all'); // all, completed, active
+        $period = $request->get('period', 'all'); // all, today, this_week, this_month, this_year
+        $category = $request->get('category', 'all');
+        
+        // Division filter - for super admin only
+        $division = $request->get('division', null);
+        
+        // Determine active division
+        if ($user->isSuperAdmin()) {
+            // Super admin can switch between agency/academy or view both
+            $activeDivision = $division ?? 'agency'; // default to agency
+        } elseif ($user->isAgencyAdmin()) {
+            $activeDivision = 'agency';
+        } elseif ($user->isAcademyAdmin()) {
+            $activeDivision = 'academy';
+        } else {
+            // Fallback for regular admin (legacy)
+            $activeDivision = 'agency';
+        }
+
+        // Base queries
+        $projectQuery = Project::query();
+        $orderQuery = Order::paid();
+
+        // Apply division filter to orders via service categories
+        $orderQuery->whereHas('items.service.category', function($q) use ($activeDivision) {
+            $q->where('division', $activeDivision);
+        });
+
+        // Apply division filter to projects via order items (services relation removed)
+        $projectQuery->whereHas('order.items.service.category', function($q) use ($activeDivision) {
+            $q->where('division', $activeDivision);
+        });
+
+        // Apply period filter
+        if ($period !== 'all') {
+            $dateFilter = $this->getDateFilter($period);
+            $projectQuery->whereBetween('created_at', $dateFilter);
+            // Use order_date if available (CSV data), fallback to confirmed_at
+            $orderQuery->where(function($q) use ($dateFilter) {
+                $q->whereBetween('order_date', $dateFilter)
+                  ->orWhereBetween('confirmed_at', $dateFilter);
+            });
+        }
+
+        // Apply status filter
+        if ($status === 'completed') {
+            $projectQuery->where('status', 'completed');
+        } elseif ($status === 'active') {
+            $projectQuery->whereIn('status', ['in_progress', 'on_hold']);
+        }
+
+        // Apply category filter
+        if ($category !== 'all') {
+            $projectQuery->whereHas('order.items.service.category', function($q) use ($category) {
+                $q->where('id', $category);
+            });
+        }
+
+        // Calculate omset statistics - Revenue = uang yang sudah masuk (paid_amount)
+        $totalRevenue = $orderQuery->sum('paid_amount');
+        $totalProjects = $projectQuery->count();
+        $completedProjects = (clone $projectQuery)->where('status', 'completed')->count();
+        $activeProjects = (clone $projectQuery)->whereIn('status', ['in_progress', 'on_hold'])->count();
+
+        // Calculate costs and profit
+        $projects = $projectQuery->get();
+        $totalCost = $projects->sum('actual_cost');
+        $totalProfit = $totalRevenue - $totalCost;
+        $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+        // Calculate growth rates (compare with previous period)
+        $previousDateFilter = $this->getPreviousDateFilter($period);
+        
+        $previousRevenue = Order::paid()
+            ->where(function($q) use ($previousDateFilter) {
+                $q->whereBetween('order_date', $previousDateFilter)
+                  ->orWhereBetween('confirmed_at', $previousDateFilter);
+            })
+            ->sum('paid_amount');
+        
+        $previousProjects = Project::whereBetween('created_at', $previousDateFilter)->get();
+        $previousCost = $previousProjects->sum('actual_cost');
+        $previousProfit = $previousRevenue - $previousCost;
+        
+        // Calculate percentage changes
+        $revenueGrowth = $previousRevenue > 0 
+            ? (($totalRevenue - $previousRevenue) / $previousRevenue) * 100 
+            : 0;
+        
+        $costGrowth = $previousCost > 0 
+            ? (($totalCost - $previousCost) / $previousCost) * 100 
+            : 0;
+        
+        $profitGrowth = $previousProfit != 0 
+            ? (($totalProfit - $previousProfit) / abs($previousProfit)) * 100 
+            : 0;
+        
+        $marginChange = $profitMargin - ($previousRevenue > 0 
+            ? ($previousProfit / $previousRevenue) * 100 
+            : 0);
+
+        // Revenue by service (per layanan, bukan kategori)
+        $revenueByService = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where('service_categories.division', $activeDivision)
+            ->select('services.name', DB::raw('SUM(order_items.subtotal) as total'))
+            ->groupBy('services.id', 'services.name')
+            ->orderByDesc('total')
+            ->limit(10) // Top 10 services
+            ->get();
+
+        // Top 5 most profitable projects
+        $topProjects = Project::select('*')
+            ->selectRaw('(budget - actual_cost) as profit')
+            ->orderByDesc('profit')
+            ->limit(5)
+            ->get();
+
+        // Monthly revenue chart data (last 12 months) - Based on actual payments received
+        $monthlyRevenue = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where(function($q) {
+                $q->where('orders.order_date', '>=', now()->subMonths(12))
+                  ->orWhere('orders.confirmed_at', '>=', now()->subMonths(12));
+            })
+            ->where('service_categories.division', $activeDivision)
+            ->select(
+                DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
+                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Outstanding payments (Belum Lunas) - last 12 months
+        $outstandingPayments = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->where('orders.payment_type', 'installment')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where('orders.remaining_amount', '>', 0)
+            ->where(function($q) {
+                $q->where('orders.order_date', '>=', now()->subMonths(12))
+                  ->orWhere('orders.confirmed_at', '>=', now()->subMonths(12));
+            })
+            ->where('service_categories.division', $activeDivision)
+            ->select(
+                DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
+                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Pending orders (waiting for confirmation)
+        $pendingOrders = Order::pending()->count();
+
+        // Recent activities
+        $recentActivities = \App\Models\ActivityLog::with('user')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        // Weekly Target vs Actual (Current Month)
+        $currentYear = now()->year;
+        $currentMonth = now()->month;
+        
+        // Get monthly target for active division
+        $monthlyTarget = DB::table('monthly_targets')
+            ->where('year', $currentYear)
+            ->where('month', $currentMonth)
+            ->where('division', $activeDivision)
+            ->first();
+        
+        $targetAmount = $monthlyTarget ? $monthlyTarget->target_amount : 0;
+        
+        // Calculate weekly revenue for current month
+        $weeklyData = [];
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+        
+        for ($week = 1; $week <= 4; $week++) {
+            // Calculate week date range
+            $weekStart = $startOfMonth->copy()->addWeeks($week - 1);
+            $weekEnd = $weekStart->copy()->addWeeks(1)->subDay();
+            
+            // Don't go beyond end of month
+            if ($weekEnd->greaterThan($endOfMonth)) {
+                $weekEnd = $endOfMonth;
+            }
+            
+            // Get revenue for this week (filtered by division)
+            $weekRevenue = Order::paid()
+                ->where(function($q) use ($weekStart, $weekEnd) {
+                    $q->whereBetween('order_date', [$weekStart, $weekEnd])
+                      ->orWhereBetween('confirmed_at', [$weekStart, $weekEnd]);
+                })
+                ->whereHas('items.service.category', function($q) use ($activeDivision) {
+                    $q->where('division', $activeDivision);
+                })
+                ->sum('paid_amount');
+            
+            // Calculate percentage
+            $percentage = $targetAmount > 0 ? ($weekRevenue / $targetAmount) * 100 : 0;
+            
+            $weeklyData[] = [
+                'week' => 'Minggu ' . $week,
+                'revenue' => $weekRevenue,
+                'percentage' => round($percentage, 1)
+            ];
+        }
+
+        return view('admin.dashboard', compact(
+            'totalRevenue',
+            'totalProjects',
+            'completedProjects',
+            'activeProjects',
+            'totalCost',
+            'totalProfit',
+            'profitMargin',
+            'revenueGrowth',
+            'costGrowth',
+            'profitGrowth',
+            'marginChange',
+            'revenueByService',
+            'topProjects',
+            'monthlyRevenue',
+            'outstandingPayments',
+            'pendingOrders',
+            'recentActivities',
+            'status',
+            'period',
+            'category',
+            'weeklyData',
+            'targetAmount',
+            'activeDivision',
+            'user'
+        ));
+    }
+
+    /**
+     * Display client dashboard.
+     */
+    public function clientDashboard()
+    {
+        $user = auth()->user();
+        $client = $user->client;
+
+        if (!$client) {
+            return view('client.dashboard-empty');
+        }
+
+        $orders = $client->orders()->latest()->limit(5)->get();
+        $projects = $client->projects()->latest()->limit(5)->get();
+
+        $stats = [
+            'total_orders' => $client->orders()->count(),
+            'total_spent' => $client->orders()->paid()->sum('paid_amount'),
+            'active_projects' => $client->projects()->whereIn('status', ['in_progress', 'on_hold'])->count(),
+            'completed_projects' => $client->projects()->where('status', 'completed')->count(),
+        ];
+
+        return view('client.dashboard', compact('orders', 'projects', 'stats'));
+    }
+
+    /**
+     * Display employee dashboard.
+     */
+    public function employeeDashboard()
+    {
+        $user = auth()->user();
+
+        // Get projects where user is a team member
+        $projects = Project::whereHas('teams.members', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with(['client', 'teams.members'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        // Get assigned tasks
+        $tasks = $user->tasks()
+            ->with('project')
+            ->where('status', '!=', 'completed')
+            ->orderBy('due_date')
+            ->limit(10)
+            ->get();
+
+        // Get time tracking summary
+        $timeThisMonth = $user->timeTrackings()
+            ->whereMonth('work_date', now()->month)
+            ->sum('hours');
+
+        $stats = [
+            'active_projects' => Project::whereHas('teams.members', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->whereIn('status', ['in_progress', 'on_hold'])->count(),
+            'pending_tasks' => $user->tasks()->whereIn('status', ['todo', 'in_progress'])->count(),
+            'hours_this_month' => $timeThisMonth,
+        ];
+
+        return view('employee.dashboard', compact('projects', 'tasks', 'stats'));
+    }
+
+    /**
+     * Get date filter based on period.
+     */
+    private function getDateFilter($period)
+    {
+        switch ($period) {
+            case 'today':
+                return [now()->startOfDay(), now()->endOfDay()];
+            case 'this_week':
+                return [now()->startOfWeek(), now()->endOfWeek()];
+            case 'this_month':
+                return [now()->startOfMonth(), now()->endOfMonth()];
+            case 'this_year':
+                return [now()->startOfYear(), now()->endOfYear()];
+            default:
+                return [now()->subYears(10), now()];
+        }
+    }
+
+    /**
+     * Get previous period date filter for comparison.
+     */
+    private function getPreviousDateFilter($period)
+    {
+        switch ($period) {
+            case 'today':
+                return [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()];
+            case 'this_week':
+                return [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()];
+            case 'this_month':
+                return [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()];
+            case 'this_year':
+                return [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()];
+            default:
+                // For 'all', compare with previous year's same period
+                return [now()->subYears(11), now()->subYear()];
+        }
+    }
+
+    /**
+     * Save or update monthly target.
+     */
+    public function saveTarget(Request $request)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'year' => 'required|integer|min:2020|max:2100',
+            'month' => 'required|integer|min:1|max:12',
+            'division' => 'required|in:agency,academy',
+            'target_amount' => 'required|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        // Check if target already exists
+        $existing = DB::table('monthly_targets')
+            ->where('year', $validated['year'])
+            ->where('month', $validated['month'])
+            ->where('division', $validated['division'])
+            ->first();
+
+        if ($existing) {
+            // Update existing
+            DB::table('monthly_targets')
+                ->where('id', $existing->id)
+                ->update([
+                    'target_amount' => $validated['target_amount'],
+                    'notes' => $validated['notes'],
+                    'updated_at' => now(),
+                ]);
+
+            $message = 'Target berhasil diupdate!';
+        } else {
+            // Insert new
+            DB::table('monthly_targets')->insert([
+                'year' => $validated['year'],
+                'month' => $validated['month'],
+                'division' => $validated['division'],
+                'target_amount' => $validated['target_amount'],
+                'notes' => $validated['notes'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $message = 'Target berhasil disimpan!';
+        }
+
+        // Redirect back to dashboard with division parameter (for super admin)
+        $redirectParams = [];
+        
+        if (auth()->user()->isSuperAdmin()) {
+            $redirectParams['division'] = $validated['division'];
+        }
+
+        return redirect()->route('admin.dashboard', $redirectParams)->with('success', $message);
+    }
+
+    /**
+     * Get calendar events (projects) as JSON for FullCalendar
+     */
+    public function getCalendarEvents(Request $request)
+    {
+        $user = auth()->user();
+        
+        // Determine division filter
+        $division = $request->get('division');
+        
+        if ($user->isSuperAdmin()) {
+            $activeDivision = $division ?? 'agency';
+        } elseif ($user->isAgencyAdmin()) {
+            $activeDivision = 'agency';
+        } elseif ($user->isAcademyAdmin()) {
+            $activeDivision = 'academy';
+        } else {
+            $activeDivision = 'agency';
+        }
+
+        // Build query
+        $query = Project::with(['client', 'order'])
+            ->whereHas('order.items.service.category', function($q) use ($activeDivision) {
+                $q->where('division', $activeDivision);
+            })
+            ->whereNotNull('start_date');
+
+        // Filter by status if requested
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $projects = $query->get();
+
+        // Format events for FullCalendar
+        $events = $projects->map(function($project) {
+            // Determine color based on status
+            $colors = [
+                'pending' => '#FCD34D',      // Yellow
+                'in_progress' => '#3B82F6',  // Blue
+                'completed' => '#10B981',    // Green
+                'on_hold' => '#F97316',      // Orange
+                'cancelled' => '#EF4444',    // Red
+            ];
+
+            // Check if overdue
+            $isOverdue = false;
+            if ($project->end_date && $project->status !== 'completed') {
+                $isOverdue = \Carbon\Carbon::parse($project->end_date)->isPast();
+            }
+
+            $clientName = $project->client->company_name ?? $project->client->user->name ?? 'N/A';
+            
+            // Truncate title to max 35 characters
+            $fullTitle = "[{$clientName}] {$project->project_name}";
+            $title = strlen($fullTitle) > 35 ? substr($fullTitle, 0, 32) . '...' : $fullTitle;
+            
+            // Use end_date as single event (deadline)
+            $eventDate = $project->end_date ?? $project->start_date;
+            
+            return [
+                'id' => $project->id,
+                'title' => $title,
+                'start' => $eventDate,
+                'allDay' => true,
+                'backgroundColor' => $isOverdue ? '#DC2626' : ($colors[$project->status] ?? '#6B7280'),
+                'borderColor' => $isOverdue ? '#991B1B' : ($colors[$project->status] ?? '#4B5563'),
+                'textColor' => '#ffffff',
+                'extendedProps' => [
+                    'project_code' => $project->project_code,
+                    'client' => $clientName,
+                    'project_name' => $project->project_name,
+                    'status' => $project->status,
+                    'budget' => $project->budget,
+                    'actual_cost' => $project->actual_cost,
+                    'is_overdue' => $isOverdue,
+                    'start_date' => $project->start_date,
+                    'end_date' => $project->end_date,
+                    'url' => route('admin.projects.show', $project->id),
+                ],
+            ];
+        });
+
+        return response()->json($events);
+    }
+}
