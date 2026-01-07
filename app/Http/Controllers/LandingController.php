@@ -132,4 +132,97 @@ class LandingController extends Controller
 
         return redirect()->back()->with('success', $successMessage);
     }
+
+    /**
+     * Show academy registration form
+     */
+    public function showAcademyRegisterForm()
+    {
+        $academyServices = Service::whereHas('category', function($query) {
+                $query->where('name', 'Academy');
+            })
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->get();
+
+        return view('academy-register', compact('academyServices'));
+    }
+
+    /**
+     * Handle academy registration submission
+     */
+    public function submitAcademyRegistration(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'age' => 'required|integer|min:15|max:100',
+            'address' => 'required|string',
+            'education' => 'required|string|max:100',
+            'employment_status' => 'required|string|max:100',
+            'program' => 'required|exists:services,id',
+            'motivation' => 'required|string',
+            'experience' => 'nullable|string',
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'phone.required' => 'Nomor WhatsApp wajib diisi',
+            'age.required' => 'Usia wajib diisi',
+            'age.min' => 'Usia minimal 15 tahun',
+            'age.max' => 'Usia tidak valid',
+            'address.required' => 'Alamat lengkap wajib diisi',
+            'education.required' => 'Pendidikan terakhir wajib dipilih',
+            'employment_status.required' => 'Status pekerjaan wajib dipilih',
+            'program.required' => 'Program academy wajib dipilih',
+            'program.exists' => 'Program yang dipilih tidak valid',
+            'motivation.required' => 'Motivasi mengikuti program wajib diisi',
+        ]);
+
+        // Get selected program/service
+        $service = Service::findOrFail($validated['program']);
+
+        // Create client profile
+        $client = Client::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'company_name' => null,
+            'address' => $validated['address'],
+        ]);
+
+        // Create order for academy registration
+        $order = Order::create([
+            'client_id' => $client->id,
+            'order_number' => Order::generateOrderNumber(),
+            'total_amount' => $service->base_price ?? 0,
+            'paid_amount' => 0,
+            'payment_status' => 'pending_review',
+            'payment_method' => 'Transfer',
+            'payment_type' => 'full',
+            'notes' => "PENDAFTARAN ACADEMY\n\n" .
+                       "Usia: {$validated['age']} tahun\n" .
+                       "Pendidikan: {$validated['education']}\n" .
+                       "Status Pekerjaan: {$validated['employment_status']}\n\n" .
+                       "MOTIVASI:\n{$validated['motivation']}\n\n" .
+                       ($validated['experience'] ? "PENGALAMAN:\n{$validated['experience']}" : ''),
+        ]);
+
+        // Create order item
+        OrderItem::create([
+            'order_id' => $order->id,
+            'service_id' => $service->id,
+            'service_package_id' => null,
+            'package_name' => 'Pendaftaran Academy',
+            'quantity' => 1,
+            'price' => $service->base_price ?? 0,
+            'subtotal' => $service->base_price ?? 0,
+        ]);
+
+        $successMessage = 'Terima kasih telah mendaftar! Nomor pendaftaran Anda: ' . $order->order_number . 
+                         '. Tim kami akan menghubungi Anda via WhatsApp maksimal 2x24 jam untuk konfirmasi dan informasi lebih lanjut.';
+
+        return redirect()->back()->with('success', $successMessage);
+    }
 }

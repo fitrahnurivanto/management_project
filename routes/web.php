@@ -15,10 +15,21 @@ use App\Http\Controllers\LaporanController;
 Route::get('/', [LandingController::class, 'index'])->name('home');
 Route::post('/submit-order', [LandingController::class, 'submit'])->name('landing.submit');
 
+// Academy Registration Routes
+Route::get('/academy/register', [LandingController::class, 'showAcademyRegisterForm'])->name('academy.register');
+Route::post('/academy/register', [LandingController::class, 'submitAcademyRegistration'])->name('academy.register.submit');
+
 // Authentication routes (Admin & Employee only)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+    
+    // Forgot Password Routes
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
+    
     // Register route removed - no more client self-registration
 });
 

@@ -84,14 +84,23 @@
             @endphp
             <!-- {{ $categoryName }} Category -->
             <div class="mb-16">
-                <div class="flex items-center mb-8">
-                    <div class="w-12 h-12 bg-{{ $color }}-100 rounded-xl flex items-center justify-center mr-4">
-                        <i class="fas fa-{{ $categoryIcons[$categoryName] ?? 'star' }} text-{{ $color }}-600 text-2xl"></i>
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-{{ $color }}-100 rounded-xl flex items-center justify-center mr-4">
+                            <i class="fas fa-{{ $categoryIcons[$categoryName] ?? 'star' }} text-{{ $color }}-600 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-2xl font-bold text-gray-900">{{ $categoryName }}</h4>
+                            <div class="h-1 w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-2"></div>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="text-2xl font-bold text-gray-900">{{ $categoryName }}</h4>
-                        <div class="h-1 w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-2"></div>
-                    </div>
+                    
+                    @if($categoryName === 'Academy')
+                    <a href="{{ route('academy.register') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-user-graduate mr-2"></i>
+                        Daftar Sekarang
+                    </a>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
