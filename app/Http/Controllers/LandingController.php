@@ -56,22 +56,42 @@ class LandingController extends Controller
             'address' => 'N/A', // Will be filled later if needed
         ]);
 
-        // 2. Calculate total from selected packages
+        // 2. Calculate total from selected packages or services
         $totalAmount = 0;
         $orderItems = [];
         
         foreach ($packageSelections as $selection) {
-            $package = ServicePackage::find($selection['package_id']);
-            if ($package) {
-                $totalAmount += $package->price;
-                $orderItems[] = [
-                    'service_id' => $selection['service_id'],
-                    'service_package_id' => $package->id,
-                    'package_name' => $package->name,
-                    'quantity' => 1,
-                    'price' => $package->price,
-                    'subtotal' => $package->price,
-                ];
+            $serviceId = $selection['service_id'];
+            $packageId = $selection['package_id'] ?? null;
+            
+            if ($packageId) {
+                // Service dengan package
+                $package = ServicePackage::find($packageId);
+                if ($package) {
+                    $totalAmount += $package->price;
+                    $orderItems[] = [
+                        'service_id' => $serviceId,
+                        'service_package_id' => $package->id,
+                        'package_name' => $package->name,
+                        'quantity' => 1,
+                        'price' => $package->price,
+                        'subtotal' => $package->price,
+                    ];
+                }
+            } else {
+                // Service tanpa package (base service)
+                $service = Service::find($serviceId);
+                if ($service) {
+                    $totalAmount += $service->base_price;
+                    $orderItems[] = [
+                        'service_id' => $serviceId,
+                        'service_package_id' => null,
+                        'package_name' => 'Layanan Standar',
+                        'quantity' => 1,
+                        'price' => $service->base_price,
+                        'subtotal' => $service->base_price,
+                    ];
+                }
             }
         }
 

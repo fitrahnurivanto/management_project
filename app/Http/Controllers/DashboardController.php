@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -23,6 +24,7 @@ class DashboardController extends Controller
         // Filter parameters
         $status = $request->get('status', 'all'); // all, completed, active
         $period = $request->get('period', 'all'); // all, today, this_week, this_month, this_year
+        $year = $request->get('year', 'all'); // all, 2026, 2025, 2024, 2023
         $category = $request->get('category', 'all');
         
         // Division filter - for super admin only
@@ -63,6 +65,15 @@ class DashboardController extends Controller
             $orderQuery->where(function($q) use ($dateFilter) {
                 $q->whereBetween('order_date', $dateFilter)
                   ->orWhereBetween('confirmed_at', $dateFilter);
+            });
+        }
+        
+        // Apply year filter
+        if ($year !== 'all') {
+            $projectQuery->whereYear('created_at', $year);
+            $orderQuery->where(function($q) use ($year) {
+                $q->whereYear('order_date', $year)
+                  ->orWhereYear('confirmed_at', $year);
             });
         }
 
@@ -205,10 +216,25 @@ class DashboardController extends Controller
         
         $targetAmount = $monthlyTarget ? $monthlyTarget->target_amount : 0;
         
-        // Calculate weekly revenue for current month
+        // Get selected month/year for weekly chart (default to current)
+        $selectedMonth = request('target_month', $currentMonth);
+        $selectedYear = request('target_year', $currentYear);
+        
+        // Calculate weekly revenue for selected month
         $weeklyData = [];
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
+        $startOfMonth = Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth();
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+        
+        // Get target for selected month if different
+        $selectedTargetAmount = $targetAmount;
+        if ($selectedMonth != $currentMonth || $selectedYear != $currentYear) {
+            $selectedTarget = DB::table('monthly_targets')
+                ->where('year', $selectedYear)
+                ->where('month', $selectedMonth)
+                ->where('division', $activeDivision)
+                ->first();
+            $selectedTargetAmount = $selectedTarget ? $selectedTarget->target_amount : 0;
+        }
         
         for ($week = 1; $week <= 4; $week++) {
             // Calculate week date range
@@ -221,10 +247,14 @@ class DashboardController extends Controller
             }
             
             // Get revenue for this week (filtered by division)
-            $weekRevenue = Order::paid()
+            // Include paid orders AND completed projects
+            $weekRevenue = Order::where(function($q) {
+                    $q->where('payment_status', 'paid')
+                      ->orWhere('payment_status', 'partial');
+                })
                 ->where(function($q) use ($weekStart, $weekEnd) {
-                    $q->whereBetween('order_date', [$weekStart, $weekEnd])
-                      ->orWhereBetween('confirmed_at', [$weekStart, $weekEnd]);
+                    // Use COALESCE to handle NULL order_date
+                    $q->whereRaw('COALESCE(order_date, confirmed_at) BETWEEN ? AND ?', [$weekStart, $weekEnd]);
                 })
                 ->whereHas('items.service.category', function($q) use ($activeDivision) {
                     $q->where('division', $activeDivision);
@@ -232,7 +262,7 @@ class DashboardController extends Controller
                 ->sum('paid_amount');
             
             // Calculate percentage
-            $percentage = $targetAmount > 0 ? ($weekRevenue / $targetAmount) * 100 : 0;
+            $percentage = $selectedTargetAmount > 0 ? ($weekRevenue / $selectedTargetAmount) * 100 : 0;
             
             $weeklyData[] = [
                 'week' => 'Minggu ' . $week,
@@ -264,9 +294,221 @@ class DashboardController extends Controller
             'category',
             'weeklyData',
             'targetAmount',
+            'selectedTargetAmount',
+            'selectedMonth',
+            'selectedYear',
             'activeDivision',
             'user'
         ));
+    }
+
+    /**
+     * Get dashboard data for AJAX filter requests (returns JSON).
+     */
+    public function getFilteredData(Request $request)
+    {
+        try {
+            if (!auth()->user()->isAdmin()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            $user = auth()->user();
+
+            // Filter parameters
+            $status = $request->get('status', 'all');
+            $period = $request->get('period', 'all');
+            $year = $request->get('year', 'all');
+            $category = $request->get('category', 'all');
+            
+            // Division filter
+            $division = $request->get('division', null);
+            
+            if ($user->isSuperAdmin()) {
+                $activeDivision = $division ?? 'agency';
+            } elseif ($user->isAgencyAdmin()) {
+                $activeDivision = 'agency';
+            } elseif ($user->isAcademyAdmin()) {
+                $activeDivision = 'academy';
+            } else {
+                $activeDivision = 'agency';
+            }
+
+            // Base queries
+            $projectQuery = Project::query();
+            $orderQuery = Order::paid();
+
+            // Apply division filter
+            $orderQuery->whereHas('items.service.category', function($q) use ($activeDivision) {
+                $q->where('division', $activeDivision);
+            });
+
+            $projectQuery->whereHas('order.items.service.category', function($q) use ($activeDivision) {
+                $q->where('division', $activeDivision);
+            });
+
+        // Apply period filter
+        if ($period !== 'all') {
+            $dateFilter = $this->getDateFilter($period);
+            $projectQuery->whereBetween('created_at', $dateFilter);
+            $orderQuery->where(function($q) use ($dateFilter) {
+                $q->whereBetween('order_date', $dateFilter)
+                  ->orWhereBetween('confirmed_at', $dateFilter);
+            });
+        }
+        
+        // Apply year filter
+        if ($year !== 'all') {
+            $projectQuery->whereYear('created_at', $year);
+            $orderQuery->where(function($q) use ($year) {
+                $q->whereYear('order_date', $year)
+                  ->orWhereYear('confirmed_at', $year);
+            });
+        }
+
+        // Apply status filter
+        if ($status === 'completed') {
+            $projectQuery->where('status', 'completed');
+        } elseif ($status === 'active') {
+            $projectQuery->whereIn('status', ['in_progress', 'on_hold']);
+        }
+
+        // Calculate statistics
+        $totalRevenue = $orderQuery->sum('paid_amount');
+        $totalProjects = $projectQuery->count();
+        $completedProjects = (clone $projectQuery)->where('status', 'completed')->count();
+        $activeProjects = (clone $projectQuery)->whereIn('status', ['in_progress', 'on_hold'])->count();
+
+        $projects = $projectQuery->get();
+        $totalCost = $projects->sum('actual_cost');
+        $totalProfit = $totalRevenue - $totalCost;
+        $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
+
+        // Growth rates
+        $previousDateFilter = $this->getPreviousDateFilter($period);
+        
+        $previousRevenue = Order::paid()
+            ->where(function($q) use ($previousDateFilter) {
+                $q->whereBetween('order_date', $previousDateFilter)
+                  ->orWhereBetween('confirmed_at', $previousDateFilter);
+            })
+            ->sum('paid_amount');
+        
+        $previousProjects = Project::whereBetween('created_at', $previousDateFilter)->get();
+        $previousCost = $previousProjects->sum('actual_cost');
+        $previousProfit = $previousRevenue - $previousCost;
+        
+        $revenueGrowth = $previousRevenue > 0 ? (($totalRevenue - $previousRevenue) / $previousRevenue) * 100 : 0;
+        $costGrowth = $previousCost > 0 ? (($totalCost - $previousCost) / $previousCost) * 100 : 0;
+        $profitGrowth = $previousProfit != 0 ? (($totalProfit - $previousProfit) / abs($previousProfit)) * 100 : 0;
+        $marginChange = $profitMargin - ($previousRevenue > 0 ? ($previousProfit / $previousRevenue) * 100 : 0);
+
+        // Revenue by service
+        $revenueByService = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where('service_categories.division', $activeDivision)
+            ->select('services.name', DB::raw('SUM(order_items.subtotal) as total'))
+            ->groupBy('services.id', 'services.name')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+
+        // Top 5 projects
+        $topProjects = Project::select('*')
+            ->selectRaw('(budget - actual_cost) as profit')
+            ->orderByDesc('profit')
+            ->limit(5)
+            ->get();
+
+        // Monthly revenue (last 12 months)
+        $monthlyRevenue = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where(function($q) {
+                $q->where('orders.order_date', '>=', now()->subMonths(12))
+                  ->orWhere('orders.confirmed_at', '>=', now()->subMonths(12));
+            })
+            ->where('service_categories.division', $activeDivision)
+            ->select(
+                DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
+                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Outstanding payments
+        $outstandingPayments = DB::table('orders')
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('services', 'order_items.service_id', '=', 'services.id')
+            ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->where('orders.payment_type', 'installment')
+            ->whereIn('orders.payment_status', ['paid'])
+            ->where('orders.remaining_amount', '>', 0)
+            ->where(function($q) {
+                $q->where('orders.order_date', '>=', now()->subMonths(12))
+                  ->orWhere('orders.confirmed_at', '>=', now()->subMonths(12));
+            })
+            ->where('service_categories.division', $activeDivision)
+            ->select(
+                DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
+                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total')
+            )
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Recent activities
+        $recentActivities = \App\Models\ActivityLog::with('user')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function($activity) {
+                return [
+                    'user_name' => $activity->user ? $activity->user->name : 'System',
+                    'description' => $activity->description,
+                    'time_ago' => $activity->created_at->diffForHumans()
+                ];
+            });
+
+        return response()->json([
+            'stats' => [
+                'totalRevenue' => $totalRevenue,
+                'totalCost' => $totalCost,
+                'totalProfit' => $totalProfit,
+                'profitMargin' => $profitMargin,
+                'totalProjects' => $totalProjects,
+                'completedProjects' => $completedProjects,
+                'activeProjects' => $activeProjects,
+                'revenueGrowth' => $revenueGrowth,
+                'costGrowth' => $costGrowth,
+                'profitGrowth' => $profitGrowth,
+                'marginChange' => $marginChange,
+            ],
+            'charts' => [
+                'revenueByService' => $revenueByService,
+                'topProjects' => $topProjects,
+                'monthlyRevenue' => $monthlyRevenue,
+                'outstandingPayments' => $outstandingPayments,
+            ],
+            'activities' => $recentActivities
+        ]);
+        
+        } catch (\Exception $e) {
+            \Log::error('Dashboard Filter Error: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'error' => 'Internal server error',
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => basename($e->getFile())
+            ], 500);
+        }
     }
 
     /**

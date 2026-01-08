@@ -35,6 +35,17 @@
                     <span class="ml-2.5">Projects</span>
                 </a>
             </li>
+            
+            <!-- Menu Khusus Academy -->
+            @if(auth()->user()->canAccessAcademy())
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.classes.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.*') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
+                    <i class="fas fa-chalkboard-teacher w-6 text-lg"></i>
+                    <span class="ml-2.5">Kelas</span>
+                </a>
+            </li>
+            @endif
+            
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.karyawan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.karyawan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-user-tie w-6 text-lg"></i>

@@ -36,10 +36,50 @@
         max-height: 700px;
         overflow-y: auto;
     }
+    
+    /* Loading overlay */
+    #dashboardLoader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+    
+    #dashboardLoader.active {
+        display: flex;
+    }
+    
+    .loader-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid #e5e7eb;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 @endpush
 
 @section('content')
+<!-- Loading Overlay -->
+<div id="dashboardLoader">
+    <div class="text-center">
+        <div class="loader-spinner mx-auto mb-4"></div>
+        <p class="text-gray-600 font-medium">Memuat data...</p>
+    </div>
+</div>
+
 <!-- Division Switcher for Super Admin -->
 @if($user->isSuperAdmin())
 <div class="mb-6">
@@ -82,8 +122,8 @@
         @endif
     </h4>
     
-    <form method="GET" class="flex gap-3">
-        <select name="period" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" onchange="this.form.submit()">
+    <div class="flex gap-3">
+        <select id="periodFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
             <option value="all" {{ $period == 'all' ? 'selected' : '' }}>Semua Periode</option>
             <option value="today" {{ $period == 'today' ? 'selected' : '' }}>Hari Ini</option>
             <option value="this_week" {{ $period == 'this_week' ? 'selected' : '' }}>Minggu Ini</option>
@@ -91,12 +131,23 @@
             <option value="this_year" {{ $period == 'this_year' ? 'selected' : '' }}>Tahun Ini</option>
         </select>
         
-        <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" onchange="this.form.submit()">
+        <select id="yearFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+            <option value="all" {{ request('year', 'all') == 'all' ? 'selected' : '' }}>Semua Tahun</option>
+            @for($y = now()->year; $y >= 2023; $y--)
+                <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
+            @endfor
+        </select>
+        
+        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
             <option value="all" {{ $status == 'all' ? 'selected' : '' }}>Semua Status</option>
             <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Selesai</option>
             <option value="active" {{ $status == 'active' ? 'selected' : '' }}>Aktif</option>
         </select>
-    </form>
+        
+        @if($user->isSuperAdmin())
+            <input type="hidden" id="divisionFilter" value="{{ request('division', $activeDivision) }}">
+        @endif
+    </div>
 </div>
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -106,13 +157,13 @@
             <div class="flex justify-between items-center">
                 <div>
                     <p class="text-gray-500 text-sm mb-1">Total Revenue</p>
-                    <h4 class="text-2xl font-bold text-gray-800">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h4>
-                    @if($revenueGrowth != 0)
-                        <p class="{{ $revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1">
+                    <h4 class="text-2xl font-bold text-gray-800" data-stat="totalRevenue">Rp {{ number_format($totalRevenue, 0, ',', '.') }}</h4>
+                    <p class="{{ $revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1" data-growth="revenueGrowth">
+                        @if($revenueGrowth != 0)
                             <i class="fas fa-arrow-{{ $revenueGrowth >= 0 ? 'up' : 'down' }}"></i> 
                             {{ $revenueGrowth >= 0 ? '+' : '' }}{{ number_format($revenueGrowth, 1) }}%
-                        </p>
-                    @endif
+                        @endif
+                    </p>
                 </div>
                 <div class="bg-green-100 p-3 rounded-xl">
                     <i class="fas fa-money-bill-wave text-3xl text-green-500"></i>
@@ -127,13 +178,13 @@
             <div class="flex justify-between items-center">
                 <div>
                     <p class="text-gray-500 text-sm mb-1">Total Cost</p>
-                    <h4 class="text-2xl font-bold text-gray-800">Rp {{ number_format($totalCost, 0, ',', '.') }}</h4>
-                    @if($costGrowth != 0)
-                        <p class="{{ $costGrowth <= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1">
+                    <h4 class="text-2xl font-bold text-gray-800" data-stat="totalCost">Rp {{ number_format($totalCost, 0, ',', '.') }}</h4>
+                    <p class="{{ $costGrowth <= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1" data-growth="costGrowth">
+                        @if($costGrowth != 0)
                             <i class="fas fa-arrow-{{ $costGrowth >= 0 ? 'up' : 'down' }}"></i> 
                             {{ $costGrowth >= 0 ? '+' : '' }}{{ number_format($costGrowth, 1) }}%
-                        </p>
-                    @endif
+                        @endif
+                    </p>
                 </div>
                 <div class="bg-red-100 p-3 rounded-xl">
                     <i class="fas fa-receipt text-3xl text-red-500"></i>
@@ -148,15 +199,15 @@
             <div class="flex justify-between items-center">
                 <div>
                     <p class="text-gray-500 text-sm mb-1">Total Profit</p>
-                    <h4 class="text-2xl font-bold {{ $totalProfit >= 0 ? 'text-green-500' : 'text-red-500' }}">
+                    <h4 class="{{ $totalProfit >= 0 ? 'text-green-500' : 'text-red-500' }} text-2xl font-bold" data-stat="totalProfit">
                         Rp {{ number_format($totalProfit, 0, ',', '.') }}
                     </h4>
-                    @if($profitGrowth != 0)
-                        <p class="{{ $profitGrowth >= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1">
+                    <p class="{{ $profitGrowth >= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1" data-growth="profitGrowth">
+                        @if($profitGrowth != 0)
                             <i class="fas fa-arrow-{{ $profitGrowth >= 0 ? 'up' : 'down' }}"></i> 
                             {{ $profitGrowth >= 0 ? '+' : '' }}{{ number_format($profitGrowth, 1) }}%
-                        </p>
-                    @endif
+                        @endif
+                    </p>
                 </div>
                 <div class="bg-indigo-100 p-3 rounded-xl">
                     <i class="fas fa-chart-line text-3xl text-indigo-500"></i>
@@ -171,15 +222,15 @@
             <div class="flex justify-between items-center">
                 <div>
                     <p class="text-gray-500 text-sm mb-1">Profit Margin</p>
-                    <h4 class="text-2xl font-bold text-gray-800">{{ number_format($profitMargin, 1) }}%</h4>
-                    @if(abs($marginChange) > 0.1)
-                        <p class="{{ $marginChange >= 0 ? 'text-green-500' : 'text-red-500' }} text-sm mt-1">
+                    <h4 class="text-2xl font-bold text-gray-800" data-stat="profitMargin">{{ number_format($profitMargin, 1) }}%</h4>
+                    <p class="{{ abs($marginChange) > 0.1 ? ($marginChange >= 0 ? 'text-green-500' : 'text-red-500') : 'text-blue-500' }} text-sm mt-1" data-growth="marginChange">
+                        @if(abs($marginChange) > 0.1)
                             <i class="fas fa-arrow-{{ $marginChange >= 0 ? 'up' : 'down' }}"></i> 
                             {{ $marginChange >= 0 ? '+' : '' }}{{ number_format($marginChange, 1) }}%
-                        </p>
-                    @else
-                        <p class="text-blue-500 text-sm mt-1"><i class="fas fa-minus"></i> Stabil</p>
-                    @endif
+                        @else
+                            <i class="fas fa-minus"></i> Stabil
+                        @endif
+                    </p>
                 </div>
                 <div class="bg-yellow-100 p-3 rounded-xl">
                     <i class="fas fa-percentage text-3xl text-yellow-500"></i>
@@ -194,7 +245,7 @@
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="p-6 text-center">
             <i class="fas fa-project-diagram text-5xl text-indigo-500 mb-3"></i>
-            <h4 class="text-3xl font-bold text-gray-800">{{ $totalProjects }}</h4>
+            <h4 class="text-3xl font-bold text-gray-800" data-stat="totalProjects">{{ $totalProjects }}</h4>
             <p class="text-gray-500 mt-2">Total Projects</p>
         </div>
     </div>
@@ -202,7 +253,7 @@
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="p-6 text-center">
             <i class="fas fa-check-circle text-5xl text-green-500 mb-3"></i>
-            <h4 class="text-3xl font-bold text-gray-800">{{ $completedProjects }}</h4>
+            <h4 class="text-3xl font-bold text-gray-800" data-stat="completedProjects">{{ $completedProjects }}</h4>
             <p class="text-gray-500 mt-2">Completed Projects</p>
         </div>
     </div>
@@ -210,7 +261,7 @@
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="p-6 text-center">
             <i class="fas fa-spinner text-5xl text-yellow-500 mb-3"></i>
-            <h4 class="text-3xl font-bold text-gray-800">{{ $activeProjects }}</h4>
+            <h4 class="text-3xl font-bold text-gray-800" data-stat="activeProjects">{{ $activeProjects }}</h4>
             <p class="text-gray-500 mt-2">Active Projects</p>
         </div>
     </div>
@@ -291,31 +342,62 @@
 
 <!-- Weekly Target vs Actual -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-2xl shadow-sm">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <div>
-                <h5 class="text-lg font-semibold text-gray-800"><i class="fas fa-bullseye mr-2"></i>Target Omset Bulanan</h5>
-                <p class="text-sm text-gray-500 mt-1">{{ now()->format('F Y') }}</p>
-            </div>
-            <div class="text-right">
-                @if($targetAmount > 0)
-                    <p class="text-sm text-gray-500">Target</p>
-                    <p class="text-xl font-bold text-indigo-600">Rp {{ number_format($targetAmount, 0, ',', '.') }}</p>
-                    <button onclick="openTargetModal()" class="mt-2 text-xs text-indigo-600 hover:text-indigo-800">
-                        <i class="fas fa-edit mr-1"></i>Edit Target
-                    </button>
-                @else
-                    <button onclick="openTargetModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm">
-                        <i class="fas fa-plus mr-1"></i>Set Target
-                    </button>
-                @endif
+    <div id="target-omset" class="bg-white rounded-2xl shadow-sm scroll-mt-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h5 class="text-lg font-semibold text-gray-800"><i class="fas fa-bullseye mr-2"></i>Target Omset Bulanan</h5>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ \Carbon\Carbon::create(request('target_year', now()->year), request('target_month', now()->month), 1)->format('F Y') }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Month Navigation -->
+                    <div class="flex items-center gap-2">
+                        <form method="GET" action="{{ route('admin.dashboard') }}#target-omset" class="inline">
+                            @foreach(request()->except(['target_month', 'target_year']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+                            <input type="hidden" name="target_month" value="{{ request('target_month', now()->month) == 1 ? 12 : request('target_month', now()->month) - 1 }}">
+                            <input type="hidden" name="target_year" value="{{ request('target_month', now()->month) == 1 ? request('target_year', now()->year) - 1 : request('target_year', now()->year) }}">
+                            <button type="submit" class="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                        </form>
+                        
+                        <form method="GET" action="{{ route('admin.dashboard') }}#target-omset" class="inline">
+                            @foreach(request()->except(['target_month', 'target_year']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+                            <input type="hidden" name="target_month" value="{{ request('target_month', now()->month) == 12 ? 1 : request('target_month', now()->month) + 1 }}">
+                            <input type="hidden" name="target_year" value="{{ request('target_month', now()->month) == 12 ? request('target_year', now()->year) + 1 : request('target_year', now()->year) }}">
+                            <button type="submit" class="p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="text-right">
+                        @if($selectedTargetAmount > 0)
+                            <p class="text-sm text-gray-500">Target</p>
+                            <p class="text-xl font-bold text-indigo-600">Rp {{ number_format($selectedTargetAmount, 0, ',', '.') }}</p>
+                            <button onclick="openTargetModal()" class="mt-2 text-xs text-indigo-600 hover:text-indigo-800">
+                                <i class="fas fa-edit mr-1"></i>Edit Target
+                            </button>
+                        @else
+                            <button onclick="openTargetModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm">
+                                <i class="fas fa-plus mr-1"></i>Set Target
+                            </button>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
         <div class="p-6">
             <div class="chart-container">
                 <canvas id="weeklyTargetChart"></canvas>
             </div>
-            @if($targetAmount == 0)
+            @if($selectedTargetAmount == 0)
                 <p class="text-gray-500 text-center py-8">Silakan set target omset bulanan terlebih dahulu</p>
             @endif
         </div>
@@ -372,26 +454,28 @@
         <h5 class="text-lg font-semibold text-gray-800"><i class="fas fa-history mr-2"></i>Recent Activities</h5>
     </div>
     <div class="p-6">
-        @if($recentActivities->count() > 0)
-            <div class="space-y-4">
-                @foreach($recentActivities as $activity)
-                    <div class="flex justify-between items-start py-3 border-b border-gray-100 last:border-0">
-                        <div class="flex items-start gap-3">
-                            <i class="fas fa-circle text-indigo-500 text-xs mt-2"></i>
-                            <div>
-                                <p class="text-gray-800">
-                                    <strong>{{ $activity->user ? $activity->user->name : 'System' }}</strong>
-                                    <span class="text-gray-600">- {{ $activity->description }}</span>
-                                </p>
+        <div data-activities="container">
+            @if($recentActivities->count() > 0)
+                <div class="space-y-4">
+                    @foreach($recentActivities as $activity)
+                        <div class="flex justify-between items-start py-3 border-b border-gray-100 last:border-0">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-circle text-indigo-500 text-xs mt-2"></i>
+                                <div>
+                                    <p class="text-gray-800">
+                                        <strong>{{ $activity->user ? $activity->user->name : 'System' }}</strong>
+                                        <span class="text-gray-600">- {{ $activity->description }}</span>
+                                    </p>
+                                </div>
                             </div>
+                            <small class="text-gray-500 text-sm whitespace-nowrap ml-4">{{ $activity->created_at->diffForHumans() }}</small>
                         </div>
-                        <small class="text-gray-500 text-sm whitespace-nowrap ml-4">{{ $activity->created_at->diffForHumans() }}</small>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            <p class="text-gray-500 text-center py-8">Belum ada aktivitas</p>
-        @endif
+                    @endforeach
+                </div>
+            @else
+                <p class="text-gray-500 text-center py-8">Belum ada aktivitas</p>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -504,6 +588,419 @@
         }
     }
 
+    // ========================================
+    // AJAX Dashboard Filter System
+    // ========================================
+    let dashboardCharts = {}; // Store chart instances for updates
+    
+    // Add event listeners to filters
+    document.addEventListener('DOMContentLoaded', function() {
+        const periodFilter = document.getElementById('periodFilter');
+        const yearFilter = document.getElementById('yearFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        
+        if (periodFilter) periodFilter.addEventListener('change', applyFilters);
+        if (yearFilter) yearFilter.addEventListener('change', applyFilters);
+        if (statusFilter) statusFilter.addEventListener('change', applyFilters);
+    });
+    
+    function applyFilters() {
+        const loader = document.getElementById('dashboardLoader');
+        loader.classList.add('active');
+        
+        const period = document.getElementById('periodFilter').value;
+        const year = document.getElementById('yearFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const division = document.getElementById('divisionFilter')?.value || '';
+        
+        const params = new URLSearchParams({
+            period: period,
+            year: year,
+            status: status
+        });
+        
+        if (division) {
+            params.append('division', division);
+        }
+        
+        const url = '{{ route("admin.dashboard.filter-data") }}?' + params.toString();
+        console.log('Fetching:', url);
+        
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('HTTP error ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                updateStats(data.stats);
+                updateCharts(data.charts);
+                updateActivities(data.activities);
+                loader.classList.remove('active');
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard data:', error);
+                loader.classList.remove('active');
+                alert('Terjadi kesalahan saat memuat data: ' + error.message + '. Silakan refresh halaman atau cek console untuk detail.');
+            });
+    }
+    
+    function updateStats(stats) {
+        // Update Revenue
+        document.querySelector('[data-stat="totalRevenue"]').textContent = 
+            'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalRevenue);
+        
+        // Update Cost
+        document.querySelector('[data-stat="totalCost"]').textContent = 
+            'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalCost);
+        
+        // Update Profit
+        const profitEl = document.querySelector('[data-stat="totalProfit"]');
+        profitEl.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalProfit);
+        profitEl.className = stats.totalProfit >= 0 ? 'text-2xl font-bold text-green-500' : 'text-2xl font-bold text-red-500';
+        
+        // Update Profit Margin
+        document.querySelector('[data-stat="profitMargin"]').textContent = 
+            stats.profitMargin.toFixed(1) + '%';
+        
+        // Update Projects counts
+        document.querySelector('[data-stat="totalProjects"]').textContent = stats.totalProjects;
+        document.querySelector('[data-stat="completedProjects"]').textContent = stats.completedProjects;
+        document.querySelector('[data-stat="activeProjects"]').textContent = stats.activeProjects;
+        
+        // Update Growth indicators
+        updateGrowthIndicator('revenueGrowth', stats.revenueGrowth);
+        updateGrowthIndicator('costGrowth', stats.costGrowth, true); // inverted (lower is better)
+        updateGrowthIndicator('profitGrowth', stats.profitGrowth);
+        updateMarginChange(stats.marginChange);
+    }
+    
+    function updateGrowthIndicator(id, value, inverted = false) {
+        const el = document.querySelector('[data-growth="' + id + '"]');
+        if (!el) return;
+        
+        const isPositive = inverted ? value <= 0 : value >= 0;
+        const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
+        const icon = value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        el.className = colorClass + ' text-sm mt-1';
+        el.innerHTML = '<i class="fas ' + icon + '"></i> ' + (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
+    }
+    
+    function updateMarginChange(value) {
+        const el = document.querySelector('[data-growth="marginChange"]');
+        if (!el) return;
+        
+        if (Math.abs(value) > 0.1) {
+            const colorClass = value >= 0 ? 'text-green-500' : 'text-red-500';
+            const icon = value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            el.className = colorClass + ' text-sm mt-1';
+            el.innerHTML = '<i class="fas ' + icon + '"></i> ' + (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
+        } else {
+            el.className = 'text-blue-500 text-sm mt-1';
+            el.innerHTML = '<i class="fas fa-minus"></i> Stabil';
+        }
+    }
+    
+    function updateCharts(charts) {
+        // Destroy existing charts
+        if (dashboardCharts.revenue) {
+            dashboardCharts.revenue.destroy();
+            dashboardCharts.revenue = null;
+        }
+        if (dashboardCharts.outstanding) {
+            dashboardCharts.outstanding.destroy();
+            dashboardCharts.outstanding = null;
+        }
+        if (dashboardCharts.service) {
+            dashboardCharts.service.destroy();
+            dashboardCharts.service = null;
+        }
+        if (dashboardCharts.projects) {
+            dashboardCharts.projects.destroy();
+            dashboardCharts.projects = null;
+        }
+        
+        // Recreate charts with new data
+        createRevenueChart(charts.monthlyRevenue);
+        createOutstandingChart(charts.outstandingPayments);
+        createServiceChart(charts.revenueByService);
+        createProjectsChart(charts.topProjects);
+    }
+    
+    function createRevenueChart(data) {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+        
+        dashboardCharts.revenue = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item.month),
+                datasets: [{
+                    label: 'Total Pendapatan',
+                    data: data.map(item => item.total),
+                    backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    borderWidth: 2,
+                    borderRadius: 1,
+                    borderSkipped: false,
+                    barPercentage: 0.5,
+                    categoryPercentage: 0.6,
+                    maxBarThickness: 80
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Total Pendapatan: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                            }
+                        },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    },
+                    x: {
+                        offset: true,
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createOutstandingChart(data) {
+        const ctx = document.getElementById('outstandingChart');
+        if (!ctx) return;
+        
+        dashboardCharts.outstanding = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item.client_name),
+                datasets: [{
+                    label: 'Belum Lunas',
+                    data: data.map(item => item.outstanding_amount),
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 2,
+                    borderRadius: 1,
+                    borderSkipped: false,
+                    barPercentage: 0.5,
+                    categoryPercentage: 0.6,
+                    maxBarThickness: 80
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Belum Lunas: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                            }
+                        },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    },
+                    x: {
+                        offset: true,
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createServiceChart(data) {
+        const ctx = document.getElementById('serviceChart');
+        if (!ctx || data.length === 0) return;
+        
+        dashboardCharts.service = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.map(item => item.service_name),
+                datasets: [{
+                    data: data.map(item => item.total_revenue),
+                    backgroundColor: [
+                        'rgba(79, 70, 229, 0.8)',
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(251, 146, 60, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(168, 85, 247, 0.8)',
+                        'rgba(236, 72, 153, 0.8)',
+                        'rgba(14, 165, 233, 0.8)',
+                        'rgba(245, 158, 11, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(34, 197, 94, 0.8)'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: { size: 11 },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map(function(label, i) {
+                                        const value = data.datasets[0].data[i];
+                                        return {
+                                            text: label + ': Rp ' + new Intl.NumberFormat('id-ID').format(value),
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function createProjectsChart(data) {
+        const ctx = document.getElementById('projectsChart');
+        if (!ctx || data.length === 0) return;
+        
+        dashboardCharts.projects = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(item => item.project_name),
+                datasets: [{
+                    label: 'Profit',
+                    data: data.map(item => item.profit),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 2,
+                    borderRadius: 1,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12, weight: 'bold' }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Profit: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.x);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                            }
+                        },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    },
+                    y: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateActivities(activities) {
+        const container = document.querySelector('[data-activities="container"]');
+        if (!container) return;
+        
+        if (activities.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada aktivitas</p>';
+            return;
+        }
+        
+        let html = '<div class="space-y-4">';
+        activities.forEach(function(activity) {
+            html += '<div class="flex justify-between items-start py-3 border-b border-gray-100 last:border-0">';
+            html += '  <div class="flex items-start gap-3">';
+            html += '    <i class="fas fa-circle text-indigo-500 text-xs mt-2"></i>';
+            html += '    <div>';
+            html += '      <p class="text-gray-800">';
+            html += '        <strong>' + activity.user_name + '</strong>';
+            html += '        <span class="text-gray-600"> - ' + activity.description + '</span>';
+            html += '      </p>';
+            html += '    </div>';
+            html += '  </div>';
+            html += '  <small class="text-gray-500 text-sm whitespace-nowrap ml-4">' + activity.time_ago + '</small>';
+            html += '</div>';
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    }
+    
     // Chart.js default config
     Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
     Chart.defaults.color = '#6b7280';
@@ -511,7 +1008,7 @@
     // 1. Monthly Revenue Trend (Bar Chart)
     const revenueCtx = document.getElementById('revenueChart');
     if (revenueCtx) {
-        new Chart(revenueCtx, {
+        dashboardCharts.revenue = new Chart(revenueCtx, {
             type: 'bar',
             data: {
                 labels: {!! json_encode($monthlyRevenue->pluck('month')) !!},
@@ -577,7 +1074,7 @@
     // 2. Outstanding Payments (Bar Chart)
     const outstandingCtx = document.getElementById('outstandingChart');
     if (outstandingCtx) {
-        new Chart(outstandingCtx, {
+        dashboardCharts.outstanding = new Chart(outstandingCtx, {
             type: 'bar',
             data: {
                 labels: {!! json_encode($outstandingPayments->pluck('month')) !!},
@@ -643,7 +1140,7 @@
     // 3. Revenue by Service (Doughnut Chart)
     const serviceCtx = document.getElementById('serviceChart');
     if (serviceCtx && {{ $revenueByService->count() > 0 ? 'true' : 'false' }}) {
-        new Chart(serviceCtx, {
+        dashboardCharts.service = new Chart(serviceCtx, {
             type: 'doughnut',
             data: {
                 labels: {!! json_encode($revenueByService->pluck('name')) !!},
@@ -694,7 +1191,7 @@
     // 4. Top Profitable Projects (Bar Chart)
     const projectsCtx = document.getElementById('projectsChart');
     if (projectsCtx && {{ $topProjects->count() > 0 ? 'true' : 'false' }}) {
-        new Chart(projectsCtx, {
+        dashboardCharts.projects = new Chart(projectsCtx, {
             type: 'bar',
             data: {
                 labels: {!! json_encode($topProjects->pluck('title')) !!},
@@ -789,9 +1286,9 @@
 
     // 6. Weekly Target vs Actual (Line Chart)
     const weeklyTargetCtx = document.getElementById('weeklyTargetChart');
-    if (weeklyTargetCtx && {{ $targetAmount > 0 ? 'true' : 'false' }}) {
+    if (weeklyTargetCtx && {{ $selectedTargetAmount > 0 ? 'true' : 'false' }}) {
         const weeklyData = {!! json_encode($weeklyData) !!};
-        const targetAmount = {{ $targetAmount }};
+        const targetAmount = {{ $selectedTargetAmount }};
         
         new Chart(weeklyTargetCtx, {
             type: 'line',

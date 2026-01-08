@@ -25,21 +25,36 @@ class ClientController extends Controller
         // Apply division filter for agency/academy admin
         if ($user->isAgencyAdmin()) {
             // Agency admin: only see clients with agency orders
-            $query->whereHas('orders.items.service.category', function($q) {
-                $q->where('division', 'agency');
+            $query->whereHas('orders', function($q) {
+                $q->where(function($subQ) {
+                    $subQ->where('division', 'agency')
+                         ->orWhereHas('items.service.category', function($itemQ) {
+                             $itemQ->where('division', 'agency');
+                         });
+                });
             });
         } elseif ($user->isAcademyAdmin()) {
-            // Academy admin: only see clients with academy orders
-            $query->whereHas('orders.items.service.category', function($q) {
-                $q->where('division', 'academy');
+            // Academy admin: only see clients with academy orders (including registrations)
+            $query->whereHas('orders', function($q) {
+                $q->where(function($subQ) {
+                    $subQ->where('division', 'academy')
+                         ->orWhereHas('items.service.category', function($itemQ) {
+                             $itemQ->where('division', 'academy');
+                         });
+                });
             });
         }
         // Super admin sees all clients (no filter)
         
         // Filter by division for super admin (dropdown filter)
         if ($user->isSuperAdmin() && $request->has('division') && $request->division !== 'all') {
-            $query->whereHas('orders.items.service.category', function($q) use ($request) {
-                $q->where('division', $request->division);
+            $query->whereHas('orders', function($q) use ($request) {
+                $q->where(function($subQ) use ($request) {
+                    $subQ->where('division', $request->division)
+                         ->orWhereHas('items.service.category', function($itemQ) use ($request) {
+                             $itemQ->where('division', $request->division);
+                         });
+                });
             });
         }
 

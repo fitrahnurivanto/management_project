@@ -107,6 +107,47 @@
                                     {{ $client->company_name }}
                                 </div>
                                 @endif
+                                
+                                @php
+                                    // Check for registration orders
+                                    $registrations = $client->orders->where('order_type', 'registration');
+                                @endphp
+                                
+                                @if($registrations->count() > 0)
+                                    @foreach($registrations as $reg)
+                                        @if($reg->registration_type === 'magang')
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700">
+                                                <i class="fas fa-user-graduate mr-1 text-xs"></i> Peserta Magang
+                                            </span>
+                                            @if($reg->institution_name)
+                                            <div class="text-xs text-gray-500 mt-0.5">
+                                                <i class="fas fa-school mr-1"></i>{{ $reg->institution_name }}
+                                                @if($reg->participant_age)
+                                                    | {{ $reg->participant_age }} tahun
+                                                @endif
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @break
+                                        @elseif($reg->registration_type === 'sertifikasi')
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+                                                <i class="fas fa-certificate mr-1 text-xs"></i> Peserta Sertifikasi
+                                            </span>
+                                            @if($reg->institution_name)
+                                            <div class="text-xs text-gray-500 mt-0.5">
+                                                <i class="fas fa-school mr-1"></i>{{ $reg->institution_name }}
+                                                @if($reg->participant_age)
+                                                    | {{ $reg->participant_age }} tahun
+                                                @endif
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @break
+                                        @endif
+                                    @endforeach
+                                @endif
                             </div>
                         </div>
                     </td>

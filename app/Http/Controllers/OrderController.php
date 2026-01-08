@@ -23,14 +23,20 @@ class OrderController extends Controller
 
         // Apply division filter based on user role
         if ($user->isAgencyAdmin()) {
-            // Agency admin: only see orders with agency services
-            $query->whereHas('items.service.category', function($q) {
-                $q->where('division', 'agency');
+            // Agency admin: only see orders with agency division
+            $query->where(function($q) {
+                $q->where('division', 'agency')
+                  ->orWhereHas('items.service.category', function($subQ) {
+                      $subQ->where('division', 'agency');
+                  });
             });
         } elseif ($user->isAcademyAdmin()) {
-            // Academy admin: only see orders with academy services
-            $query->whereHas('items.service.category', function($q) {
-                $q->where('division', 'academy');
+            // Academy admin: only see orders with academy division (includes registrations)
+            $query->where(function($q) {
+                $q->where('division', 'academy')
+                  ->orWhereHas('items.service.category', function($subQ) {
+                      $subQ->where('division', 'academy');
+                  });
             });
         }
         // Super admin sees all orders (no filter)
@@ -42,37 +48,65 @@ class OrderController extends Controller
 
         // Filter by division for super admin (dropdown filter)
         if ($user->isSuperAdmin() && $request->has('division') && $request->division !== 'all') {
-            $query->whereHas('items.service.category', function($q) use ($request) {
-                $q->where('division', $request->division);
+            $query->where(function($q) use ($request) {
+                $q->where('division', $request->division)
+                  ->orWhereHas('items.service.category', function($subQ) use ($request) {
+                      $subQ->where('division', $request->division);
+                  });
             });
         }
 
-        // Filter by year - default to current year (2025)
-        $selectedYear = $request->get('year', date('Y'));
+        // Filter by year - default to ALL years (don't filter by default)
+        $selectedYear = $request->get('year', 'all');
         if ($selectedYear !== 'all') {
             $query->whereYear(DB::raw('COALESCE(order_date, created_at)'), $selectedYear);
         }
 
-        // Get available years from orders
-        $availableYears = Order::selectRaw('YEAR(COALESCE(order_date, created_at)) as year')
-            ->distinct()
+        // Get available years from orders (with same division filter as main query)
+        $availableYearsQuery = Order::selectRaw('YEAR(COALESCE(order_date, created_at)) as year');
+        
+        // Apply same division filter to available years
+        if ($user->isAgencyAdmin()) {
+            $availableYearsQuery->where(function($q) {
+                $q->where('division', 'agency')
+                  ->orWhereHas('items.service.category', function($subQ) {
+                      $subQ->where('division', 'agency');
+                  });
+            });
+        } elseif ($user->isAcademyAdmin()) {
+            $availableYearsQuery->where(function($q) {
+                $q->where('division', 'academy')
+                  ->orWhereHas('items.service.category', function($subQ) {
+                      $subQ->where('division', 'academy');
+                  });
+            });
+        } elseif ($user->isSuperAdmin() && $request->has('division') && $request->division !== 'all') {
+            $availableYearsQuery->where(function($q) use ($request) {
+                $q->where('division', $request->division)
+                  ->orWhereHas('items.service.category', function($subQ) use ($request) {
+                      $subQ->where('division', $request->division);
+                  });
+            });
+        }
+        
+        $availableYears = $availableYearsQuery->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->filter()
             ->values();
 
         // Urutan prioritas:
-        // 1. Status pending_review di atas (perlu review dulu)
-        // 2. Tanggal masuk sistem (created_at) terbaru - order baru perlu dikonfirmasi
-        // 3. Order_date sebagai secondary sort
-        $query->orderByRaw("CASE 
+        // 1. Data terbaru di atas (created_at DESC)
+        // 2. Status pending_review priority kedua
+        // 3. Order_date sebagai fallback
+        $query->orderBy('created_at', 'desc')
+        ->orderByRaw("CASE 
             WHEN payment_status = 'pending_review' THEN 1
             WHEN payment_status = 'pending' THEN 2
             WHEN payment_status = 'paid' THEN 3
             WHEN payment_status = 'failed' THEN 4
             ELSE 5
         END")
-        ->orderBy('created_at', 'desc')
         ->orderBy('order_date', 'desc');
 
         $orders = $query->paginate(20);

@@ -10,14 +10,19 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ClasController;
 
 // Public routes - Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('home');
 Route::post('/submit-order', [LandingController::class, 'submit'])->name('landing.submit');
 
-// Academy Registration Routes
-Route::get('/academy/register', [LandingController::class, 'showAcademyRegisterForm'])->name('academy.register');
-Route::post('/academy/register', [LandingController::class, 'submitAcademyRegistration'])->name('academy.register.submit');
+// Academy Registration Routes (Public - Anyone can register)
+Route::get('/daftar/magang', [RegistrationController::class, 'magangForm'])->name('admin.registrations.magang');
+Route::post('/daftar/magang', [RegistrationController::class, 'storeMagang'])->name('admin.registrations.magang.store');
+Route::get('/daftar/sertifikasi', [RegistrationController::class, 'sertifikasiForm'])->name('admin.registrations.sertifikasi');
+Route::post('/daftar/sertifikasi', [RegistrationController::class, 'storeSertifikasi'])->name('admin.registrations.sertifikasi.store');
+
 
 // Authentication routes (Admin & Employee only)
 Route::middleware('guest')->group(function () {
@@ -52,6 +57,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin routes
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])->name('dashboard');
+        Route::get('/dashboard/filter-data', [DashboardController::class, 'getFilteredData'])->name('dashboard.filter-data');
         Route::post('/dashboard/save-target', [DashboardController::class, 'saveTarget'])->name('dashboard.save-target');
         Route::get('/dashboard/calendar-events', [DashboardController::class, 'getCalendarEvents'])->name('dashboard.calendar-events');
         
@@ -104,6 +110,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/projects/{project}/teams/create', [TeamController::class, 'create'])->name('teams.create');
         Route::post('/projects/{project}/teams', [TeamController::class, 'store'])->name('teams.store');
         Route::delete('/teams/{team}/members/{member}', [TeamController::class, 'removeMember'])->name('teams.removeMember');
+
+        // Classes management (Academy only)
+        Route::get('/classes', [ClasController::class, 'index'])->name('classes.index');
     });
 
     // Employee routes
