@@ -35,6 +35,14 @@
                     <span class="ml-2.5">Projects</span>
                 </a>
             </li>
+
+             <li class="mx-2.5 my-1">
+                <a href="{{ url('admin/tracking') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->is('admin/tracking*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-chart-line w-6 text-lg"></i>
+                    <span class="ml-2.5">Tracking Kelas</span>
+                </a>
+            </li>
+            
             
             <!-- Menu Khusus Academy -->
             @if(auth()->user()->canAccessAcademy())

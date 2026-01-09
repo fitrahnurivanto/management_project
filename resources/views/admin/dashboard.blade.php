@@ -638,6 +638,7 @@
                 console.log('Data received:', data);
                 updateStats(data.stats);
                 updateCharts(data.charts);
+                createComparisonChart(data.stats); // Update comparison chart
                 updateActivities(data.activities);
                 loader.classList.remove('active');
             })
@@ -723,12 +724,67 @@
             dashboardCharts.projects.destroy();
             dashboardCharts.projects = null;
         }
+        if (dashboardCharts.comparison) {
+            dashboardCharts.comparison.destroy();
+            dashboardCharts.comparison = null;
+        }
         
         // Recreate charts with new data
         createRevenueChart(charts.monthlyRevenue);
         createOutstandingChart(charts.outstandingPayments);
         createServiceChart(charts.revenueByService);
         createProjectsChart(charts.topProjects);
+    }
+    
+    function createComparisonChart(stats) {
+        const ctx = document.getElementById('comparisonChart');
+        if (!ctx) return;
+        
+        dashboardCharts.comparison = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Revenue', 'Cost', 'Profit'],
+                datasets: [{
+                    label: 'Amount',
+                    data: [stats.totalRevenue, stats.totalCost, stats.totalProfit],
+                    backgroundColor: [
+                        'rgba(16, 185, 129, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(102, 126, 234, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(16, 185, 129, 1)',
+                        'rgba(239, 68, 68, 1)',
+                        'rgba(102, 126, 234, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
     
     function createRevenueChart(data) {
@@ -798,10 +854,10 @@
         dashboardCharts.outstanding = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: data.map(item => item.client_name),
+                labels: data.map(item => item.month),
                 datasets: [{
                     label: 'Belum Lunas',
-                    data: data.map(item => item.outstanding_amount),
+                    data: data.map(item => item.total),
                     backgroundColor: 'rgba(239, 68, 68, 0.8)',
                     borderColor: 'rgba(239, 68, 68, 1)',
                     borderWidth: 2,
@@ -858,9 +914,9 @@
         dashboardCharts.service = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: data.map(item => item.service_name),
+                labels: data.map(item => item.name),
                 datasets: [{
-                    data: data.map(item => item.total_revenue),
+                    data: data.map(item => item.total),
                     backgroundColor: [
                         'rgba(79, 70, 229, 0.8)',
                         'rgba(16, 185, 129, 0.8)',
@@ -922,7 +978,7 @@
         dashboardCharts.projects = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: data.map(item => item.project_name),
+                labels: data.map(item => item.title),
                 datasets: [{
                     label: 'Profit',
                     data: data.map(item => item.profit),
@@ -1235,7 +1291,7 @@
     // 5. Revenue vs Cost Comparison (Bar Chart)
     const comparisonCtx = document.getElementById('comparisonChart');
     if (comparisonCtx) {
-        new Chart(comparisonCtx, {
+        dashboardCharts.comparison = new Chart(comparisonCtx, {
             type: 'bar',
             data: {
                 labels: ['Revenue', 'Cost', 'Profit'],

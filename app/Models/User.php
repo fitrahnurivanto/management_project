@@ -172,4 +172,29 @@ class User extends Authenticatable
     {
         return $this->role === 'employee';
     }
+
+    /**
+     * Get user notifications.
+     */
+    public function notifications()
+    {
+        return $this->hasMany(\App\Models\Notification::class);
+    }
+
+    /**
+     * Get notification settings.
+     */
+    public function notificationSettings()
+    {
+        return $this->hasMany(\App\Models\NotificationSetting::class);
+    }
+
+    /**
+     * Get unread notifications count.
+     */
+    public function unreadNotificationsCount()
+    {
+        return $this->notifications()->unread()->count();
+    }
 }
+

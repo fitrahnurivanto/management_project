@@ -113,6 +113,17 @@ Route::middleware(['auth'])->group(function () {
 
         // Classes management (Academy only)
         Route::get('/classes', [ClasController::class, 'index'])->name('classes.index');
+        Route::get('/classes/create', [ClasController::class, 'create'])->name('classes.create');
+        Route::post('/classes', [ClasController::class, 'store'])->name('classes.store');
+        Route::get('/classes/{clas}', [ClasController::class, 'show'])->name('classes.show');
+        Route::get('/classes/{clas}/edit', [ClasController::class, 'edit'])->name('classes.edit');
+        Route::put('/classes/{clas}', [ClasController::class, 'update'])->name('classes.update');
+        Route::delete('/classes/{clas}', [ClasController::class, 'destroy'])->name('classes.destroy');
+        Route::post('/classes/{clas}/approve', [ClasController::class, 'approve'])->name('classes.approve');
+        Route::post('/classes/{clas}/reject', [ClasController::class, 'reject'])->name('classes.reject');
+
+        // Tracking Kelas
+        Route::get('/tracking', [ClasController::class, 'track'])->name('tracking.index');
     });
 
     // Employee routes

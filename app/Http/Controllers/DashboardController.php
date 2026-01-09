@@ -70,7 +70,14 @@ class DashboardController extends Controller
         
         // Apply year filter
         if ($year !== 'all') {
-            $projectQuery->whereYear('created_at', $year);
+            // Filter projects by order date, not project created_at
+            $projectQuery->whereHas('order', function($q) use ($year) {
+                $q->where(function($subQ) use ($year) {
+                    $subQ->whereYear('order_date', $year)
+                         ->orWhereYear('confirmed_at', $year);
+                });
+            });
+            
             $orderQuery->where(function($q) use ($year) {
                 $q->whereYear('order_date', $year)
                   ->orWhereYear('confirmed_at', $year);
@@ -358,7 +365,14 @@ class DashboardController extends Controller
         
         // Apply year filter
         if ($year !== 'all') {
-            $projectQuery->whereYear('created_at', $year);
+            // Filter projects by order date, not project created_at
+            $projectQuery->whereHas('order', function($q) use ($year) {
+                $q->where(function($subQ) use ($year) {
+                    $subQ->whereYear('order_date', $year)
+                         ->orWhereYear('confirmed_at', $year);
+                });
+            });
+            
             $orderQuery->where(function($q) use ($year) {
                 $q->whereYear('order_date', $year)
                   ->orWhereYear('confirmed_at', $year);
@@ -402,21 +416,40 @@ class DashboardController extends Controller
         $profitGrowth = $previousProfit != 0 ? (($totalProfit - $previousProfit) / abs($previousProfit)) * 100 : 0;
         $marginChange = $profitMargin - ($previousRevenue > 0 ? ($previousProfit / $previousRevenue) * 100 : 0);
 
-        // Revenue by service
-        $revenueByService = DB::table('orders')
+        // Revenue by service - Apply same filters as main stats
+        $revenueByServiceQuery = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
             ->whereIn('orders.payment_status', ['paid'])
-            ->where('service_categories.division', $activeDivision)
+            ->where('service_categories.division', $activeDivision);
+        
+        // Apply period filter to revenue by service
+        if ($period !== 'all') {
+            $revenueByServiceQuery->where(function($q) use ($dateFilter) {
+                $q->whereBetween('orders.order_date', $dateFilter)
+                  ->orWhereBetween('orders.confirmed_at', $dateFilter);
+            });
+        }
+        
+        // Apply year filter to revenue by service
+        if ($year !== 'all') {
+            $revenueByServiceQuery->where(function($q) use ($year) {
+                $q->whereYear('orders.order_date', $year)
+                  ->orWhereYear('orders.confirmed_at', $year);
+            });
+        }
+        
+        $revenueByService = $revenueByServiceQuery
             ->select('services.name', DB::raw('SUM(order_items.subtotal) as total'))
             ->groupBy('services.id', 'services.name')
             ->orderByDesc('total')
             ->limit(10)
             ->get();
 
-        // Top 5 projects
-        $topProjects = Project::select('*')
+        // Top 5 projects - Use filtered project query
+        $topProjects = (clone $projectQuery)
+            ->select('*')
             ->selectRaw('(budget - actual_cost) as profit')
             ->orderByDesc('profit')
             ->limit(5)
