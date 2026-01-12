@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Auth\Events\PasswordReset;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -245,5 +246,71 @@ class AuthController extends Controller
         return $status === Password::PASSWORD_RESET
             ? redirect()->route('login')->with('success', 'Password berhasil direset! Silakan login dengan password baru.')
             : back()->withErrors(['email' => __($status)]);
+    }
+
+    /**
+     * Redirect to Google for authentication.
+     */
+    public function redirectToGoogle()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * Handle Google callback.
+     */
+    public function handleGoogleCallback()
+    {
+        try {
+            $googleUser = Socialite::driver('google')->user();
+            
+            // Find or create user
+            $user = User::where('email', $googleUser->getEmail())->first();
+            
+            if (!$user) {
+                // Create new user with employee role
+                $user = User::create([
+                    'name' => $googleUser->getName(),
+                    'email' => $googleUser->getEmail(),
+                    'password' => Hash::make(Str::random(16)), // Random password
+                    'role' => 'employee', // Default role for Google login
+                    'google_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                ]);
+
+                // Log activity
+                \App\Models\ActivityLog::createLog(
+                    'register',
+                    'User',
+                    $user->id,
+                    $user->name . ' mendaftar via Google'
+                );
+            } else {
+                // Update google_id if not set
+                if (!$user->google_id) {
+                    $user->update([
+                        'google_id' => $googleUser->getId(),
+                        'avatar' => $googleUser->getAvatar(),
+                    ]);
+                }
+            }
+
+            // Login user
+            Auth::login($user, true);
+
+            // Log activity
+            \App\Models\ActivityLog::createLog(
+                'login',
+                'User',
+                $user->id,
+                $user->name . ' login via Google'
+            );
+
+            return $this->redirectToDashboard();
+
+        } catch (\Exception $e) {
+            return redirect()->route('login')
+                ->withErrors(['error' => 'Gagal login dengan Google. Silakan coba lagi.']);
+        }
     }
 }

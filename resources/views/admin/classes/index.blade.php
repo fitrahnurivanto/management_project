@@ -152,6 +152,9 @@
                             <!-- Nama Kelas -->
                             <div>
                                 <div class="text-sm font-medium text-gray-900">{{ $class->name }}</div>
+                                @if($class->instansi)
+                                <div class="text-xs text-gray-500"><i class="fas fa-building mr-1"></i>{{ $class->instansi }}</div>
+                                @endif
                                 <div class="text-sm text-gray-500">{{ $class->meet }}x pertemuan • {{ $class->duration }} menit</div>
                             </div>
                         </div>
@@ -171,8 +174,20 @@
                             </span>
                         @endif
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900">{{ $class->trainer }}</div>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">
+                            @if(is_array($class->trainer))
+                                @foreach($class->trainer as $trainer)
+                                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs mr-1 mb-1">
+                                        <i class="fas fa-user-tie mr-1"></i>{{ $trainer }}
+                                    </span>
+                                @endforeach
+                            @else
+                                <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                    <i class="fas fa-user-tie mr-1"></i>{{ $class->trainer }}
+                                </span>
+                            @endif
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($class->method === 'online')

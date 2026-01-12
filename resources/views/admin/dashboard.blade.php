@@ -823,7 +823,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'Total Pendapatan: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const item = data[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }
@@ -883,7 +886,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'Belum Lunas: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const item = data[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }
@@ -962,7 +968,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed);
+                                const item = data[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }
@@ -1064,13 +1073,15 @@
     // 1. Monthly Revenue Trend (Bar Chart)
     const revenueCtx = document.getElementById('revenueChart');
     if (revenueCtx) {
+        const revenueData = {!! json_encode($monthlyRevenue) !!};
+        
         dashboardCharts.revenue = new Chart(revenueCtx, {
             type: 'bar',
             data: {
-                labels: {!! json_encode($monthlyRevenue->pluck('month')) !!},
+                labels: revenueData.map(item => item.month),
                 datasets: [{
                     label: 'Total Pendapatan',
-                    data: {!! json_encode($monthlyRevenue->pluck('total')) !!},
+                    data: revenueData.map(item => item.total),
                     backgroundColor: 'rgba(79, 70, 229, 0.8)',
                     borderColor: 'rgba(79, 70, 229, 1)',
                     borderWidth: 2,
@@ -1099,7 +1110,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'Total Pendapatan: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const item = revenueData[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }
@@ -1130,13 +1144,15 @@
     // 2. Outstanding Payments (Bar Chart)
     const outstandingCtx = document.getElementById('outstandingChart');
     if (outstandingCtx) {
+        const outstandingData = {!! json_encode($outstandingPayments) !!};
+        
         dashboardCharts.outstanding = new Chart(outstandingCtx, {
             type: 'bar',
             data: {
-                labels: {!! json_encode($outstandingPayments->pluck('month')) !!},
+                labels: outstandingData.map(item => item.month),
                 datasets: [{
                     label: 'Belum Lunas',
-                    data: {!! json_encode($outstandingPayments->pluck('total')) !!},
+                    data: outstandingData.map(item => item.total),
                     backgroundColor: 'rgba(239, 68, 68, 0.8)',
                     borderColor: 'rgba(239, 68, 68, 1)',
                     borderWidth: 2,
@@ -1165,7 +1181,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return 'Belum Lunas: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const item = outstandingData[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }
@@ -1196,12 +1215,14 @@
     // 3. Revenue by Service (Doughnut Chart)
     const serviceCtx = document.getElementById('serviceChart');
     if (serviceCtx && {{ $revenueByService->count() > 0 ? 'true' : 'false' }}) {
+        const serviceData = {!! json_encode($revenueByService) !!};
+        
         dashboardCharts.service = new Chart(serviceCtx, {
             type: 'doughnut',
             data: {
-                labels: {!! json_encode($revenueByService->pluck('name')) !!},
+                labels: serviceData.map(item => item.name),
                 datasets: [{
-                    data: {!! json_encode($revenueByService->pluck('total')) !!},
+                    data: serviceData.map(item => item.total),
                     backgroundColor: [
                         'rgba(79, 70, 229, 0.8)',
                         'rgba(16, 185, 129, 0.8)',
@@ -1235,7 +1256,10 @@
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return context.label + ': Rp ' + (context.parsed / 1000000).toFixed(1) + 'JT';
+                                const item = serviceData[context.dataIndex];
+                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed);
+                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
+                                return [amount, projects];
                             }
                         }
                     }

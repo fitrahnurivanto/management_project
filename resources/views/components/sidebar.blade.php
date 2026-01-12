@@ -5,12 +5,16 @@
     
     <ul class="py-5 px-0 list-none">
         @if(auth()->user()->role === 'admin')
+            <!-- Dashboard - All Admins -->
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-home w-6 text-lg"></i>
                     <span class="ml-2.5">Dashboard</span>
                 </a>
             </li>
+
+            <!-- Menu Agency (Super Admin & Admin Agency) -->
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->isAgencyAdmin())
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.orders.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.orders.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-shopping-cart w-6 text-lg"></i>
@@ -35,25 +39,32 @@
                     <span class="ml-2.5">Projects</span>
                 </a>
             </li>
-
-             <li class="mx-2.5 my-1">
-                <a href="{{ url('admin/tracking') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->is('admin/tracking*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
-                    <i class="fas fa-chart-line w-6 text-lg"></i>
-                    <span class="ml-2.5">Tracking Kelas</span>
-                </a>
-            </li>
+            @endif
             
-            
-            <!-- Menu Khusus Academy -->
+            <!-- Menu Academy (Super Admin & Admin Academy) -->
             @if(auth()->user()->canAccessAcademy())
             <li class="mx-2.5 my-1">
-                <a href="{{ route('admin.classes.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.*') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
+                <a href="{{ route('admin.classes.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.index') || request()->routeIs('admin.classes.create') || request()->routeIs('admin.classes.edit') || request()->routeIs('admin.classes.show') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
                     <i class="fas fa-chalkboard-teacher w-6 text-lg"></i>
                     <span class="ml-2.5">Kelas</span>
                 </a>
             </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.classes.showclas') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-green-50 hover:text-green-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.showclas') ? 'bg-green-50 text-green-600 font-semibold' : '' }}">
+                    <i class="fas fa-play-circle w-6 text-lg"></i>
+                    <span class="ml-2.5">Kelas Berjalan</span>
+                    @php
+                        $activeClassCount = \App\Models\Clas::where('status', 'approved')->count();
+                    @endphp
+                    @if($activeClassCount > 0)
+                    <span class="ml-auto bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">{{ $activeClassCount }}</span>
+                    @endif
+                </a>
+            </li>
             @endif
-            
+
+            <!-- Karyawan & Teams (Super Admin & Admin Agency) -->
+            @if(auth()->user()->isSuperAdmin() || auth()->user()->isAgencyAdmin())
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.karyawan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.karyawan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-user-tie w-6 text-lg"></i>
@@ -66,14 +77,39 @@
                     <span class="ml-2.5">Teams</span>
                 </a>
             </li>
+            @endif
             
+            <!-- Laporan & Payment Requests - All Admins -->
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.laporan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.laporan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-chart-line w-6 text-lg"></i>
                     <span class="ml-2.5">Laporan</span>
                 </a>
             </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.payment-requests.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.payment-requests.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-money-bill-wave w-6 text-lg"></i>
+                    <span class="ml-2.5">Payment Requests</span>
+                    @php
+                        $pendingPaymentsQuery = \App\Models\PaymentRequest::where('status', 'pending');
+                        if (auth()->user()->isAgencyAdmin()) {
+                            $pendingPaymentsQuery->whereHas('project.order.items.service.category', function($q) {
+                                $q->where('division', 'agency');
+                            });
+                        } elseif (auth()->user()->isAcademyAdmin()) {
+                            $pendingPaymentsQuery->whereHas('project.order.items.service.category', function($q) {
+                                $q->where('division', 'academy');
+                            });
+                        }
+                        $pendingPayments = $pendingPaymentsQuery->count();
+                    @endphp
+                    @if($pendingPayments > 0)
+                    <span class="ml-auto bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded-full">{{ $pendingPayments }}</span>
+                    @endif
+                </a>
+            </li>
         @else
+            <!-- Employee Menu -->
             <li class="mx-2.5 my-1">
                 <a href="{{ route('employee.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('employee.dashboard') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-home w-6 text-lg"></i>

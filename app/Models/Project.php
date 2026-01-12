@@ -101,6 +101,22 @@ class Project extends Model
     }
 
     /**
+     * Get payment requests for the project.
+     */
+    public function paymentRequests()
+    {
+        return $this->hasMany(PaymentRequest::class);
+    }
+
+    /**
+     * Get chats for the project.
+     */
+    public function chats()
+    {
+        return $this->hasMany(ProjectChat::class);
+    }
+
+    /**
      * Calculate profit for the project.
      */
     public function getProfitAttribute()

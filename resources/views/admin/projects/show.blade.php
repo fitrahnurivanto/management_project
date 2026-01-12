@@ -6,7 +6,7 @@
     <div class="flex justify-between items-center mb-6">
         <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('admin.projects.index') }}" class="text-gray-600 hover:text-gray-900">
+                <a href="{{ route(auth()->user()->isAdmin() ? 'admin.projects.index' : 'employee.projects.index') }}" class="text-gray-600 hover:text-gray-900">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h1 class="text-2xl font-bold text-gray-900">{{ $project->project_name }}</h1>
@@ -69,6 +69,30 @@
     @if(session('error'))
     <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
         <i class="fas fa-exclamation-circle mr-2"></i> {{ session('error') }}
+    </div>
+    @endif
+
+    <!-- Quick Actions for Employee -->
+    @if(!auth()->user()->isAdmin())
+    <div class="bg-gradient-to-r from-green-600 to-teal-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h3 class="text-lg font-bold mb-1">My Actions</h3>
+                <p class="text-sm opacity-90">Ajukan pembayaran untuk project ini</p>
+            </div>
+            <div class="flex gap-3 flex-wrap">
+                <button type="button" onclick="openPaymentRequestModal()" 
+                        class="bg-white text-green-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-semibold shadow-md flex items-center gap-2">
+                    <i class="fas fa-money-bill-wave"></i>
+                    Ajukan Payment Request
+                </button>
+                <a href="{{ route('employee.payment-requests.index') }}" 
+                   class="bg-white text-teal-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition font-semibold shadow-md flex items-center gap-2">
+                    <i class="fas fa-history"></i>
+                    Riwayat Request
+                </a>
+            </div>
+        </div>
     </div>
     @endif
 
@@ -889,6 +913,7 @@
         </form>
     </div>
 </div>
+@endif
 
 <script>
 function openAddMemberModal() {
@@ -1067,6 +1092,94 @@ setTimeout(() => {
         setTimeout(() => alert.remove(), 500);
     });
 }, 5000);
+
+// Payment Request Modal for Employee
+function openPaymentRequestModal() {
+    console.log('Opening payment request modal...');
+    const modal = document.getElementById('paymentRequestModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        console.log('Modal opened successfully');
+    } else {
+        console.error('Modal element not found!');
+    }
+}
+
+function closePaymentRequestModal() {
+    document.getElementById('paymentRequestModal').classList.add('hidden');
+}
+
+function formatCurrencyInput(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value) {
+        input.value = formatNumber(value);
+        document.getElementById('payment_amount_raw').value = value;
+    } else {
+        input.value = '';
+        document.getElementById('payment_amount_raw').value = '';
+    }
+}
 </script>
+
+<!-- Payment Request Modal (Employee Only) -->
+@if(!auth()->user()->isAdmin())
+<div id="paymentRequestModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-900">Ajukan Payment Request</h3>
+                <button onclick="closePaymentRequestModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <form action="{{ route('employee.payment-requests.store') }}" method="POST">
+            @csrf
+            <input type="hidden" name="project_id" value="{{ $project->id }}">
+            <input type="hidden" name="requested_amount" id="payment_amount_raw">
+            
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Project</label>
+                    <input type="text" value="{{ $project->project_name }}" disabled 
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        Nominal Payment <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
+                        <input type="text" id="payment_amount" oninput="formatCurrencyInput(this)" required
+                               class="w-full pl-12 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                               placeholder="0">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Masukkan nominal yang ingin diajukan</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Catatan (Optional)</label>
+                    <textarea name="notes" rows="3" 
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              placeholder="Keterangan pekerjaan yang sudah diselesaikan..."></textarea>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-200 flex gap-3">
+                <button type="button" onclick="closePaymentRequestModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-semibold">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold">
+                    <i class="fas fa-paper-plane mr-2"></i>Ajukan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 @endif
+</script>
 @endsection

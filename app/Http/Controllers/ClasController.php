@@ -66,6 +66,7 @@ class ClasController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'instansi' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
             'amount' => 'required|integer|min:1',
             'cost' => 'required|numeric|min:0',
@@ -74,15 +75,16 @@ class ClasController extends Controller
             'method' => 'required|in:online,offline',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'trainer' => 'required|string|max:255',
+            'trainer' => 'required|array|min:1',
+            'trainer.*' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:pending,approved,rejected',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
         // Total pendapatan = jumlah siswa x harga per siswa - biaya operasional
         $validated['income'] = ($validated['amount'] * $validated['price']) - $validated['cost'];
         $validated['user_id'] = auth()->id();
+        $validated['status'] = 'pending'; // Default status pending
 
         Clas::create($validated);
 
@@ -122,6 +124,7 @@ class ClasController extends Controller
         
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'instansi' => 'nullable|string|max:255',
             'price' => 'required|numeric|min:0',
             'amount' => 'required|integer|min:1',
             'cost' => 'required|numeric|min:0',
@@ -130,7 +133,8 @@ class ClasController extends Controller
             'method' => 'required|in:online,offline',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'trainer' => 'required|string|max:255',
+            'trainer' => 'required|array|min:1',
+            'trainer.*' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,approved,rejected',
         ]);
@@ -193,4 +197,20 @@ class ClasController extends Controller
         return view('admin.tracking.index');
 
    }
+
+
+
+    public function showclas()
+    {
+        $user = auth()->user();
+        
+        if (!$user->canAccessAcademy()) {
+            abort(403, 'Unauthorized access.');
+        }
+        $approvedClasses = Clas::where('status', 'approved')
+                               ->latest()
+                               ->get();
+        
+        return view('admin.classes.showclas', compact('approvedClasses'));
+    }
 }
