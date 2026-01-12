@@ -45,19 +45,61 @@
                         @enderror
                     </div>
 
-                    <!-- Trainer -->
+                    <!-- Instansi -->
                     <div class="md:col-span-2">
-                        <label for="trainer" class="block text-sm font-medium text-gray-700 mb-2">
-                            Nama Trainer <span class="text-red-500">*</span>
+                        <label for="instansi" class="block text-sm font-medium text-gray-700 mb-2">
+                            Instansi
                         </label>
                         <input type="text" 
-                               name="trainer" 
-                               id="trainer" 
-                               value="{{ old('trainer', $clas->trainer ?? '') }}"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('trainer') border-red-500 @enderror"
-                               placeholder="Contoh: John Doe"
-                               required>
+                               name="instansi" 
+                               id="instansi" 
+                               value="{{ old('instansi', $clas->instansi ?? '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('instansi') border-red-500 @enderror"
+                               placeholder="Contoh: PT. ABC atau Universitas XYZ">
+                        @error('instansi')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Trainer -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Nama Trainer <span class="text-red-500">*</span>
+                        </label>
+                        <div id="trainers-container" class="space-y-3">
+                            @php
+                                $trainers = old('trainer', []);
+                                if (empty($trainers)) {
+                                    $trainers = [''];
+                                }
+                            @endphp
+                            @foreach($trainers as $index => $trainer)
+                            <div class="trainer-item flex gap-2">
+                                <input type="text" 
+                                       name="trainer[]" 
+                                       value="{{ $trainer }}"
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('trainer.'.$index) border-red-500 @enderror"
+                                       placeholder="Contoh: John Doe"
+                                       required>
+                                @if($index > 0)
+                                <button type="button" 
+                                        onclick="removeTrainer(this)"
+                                        class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                @endif
+                            </div>
+                            @endforeach
+                        </div>
+                        <button type="button" 
+                                onclick="addTrainer()"
+                                class="mt-3 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                            <i class="fas fa-plus mr-2"></i>Tambah Trainer
+                        </button>
                         @error('trainer')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        @error('trainer.*')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -172,25 +214,6 @@
                         @enderror
                     </div>
 
-                    <!-- Status -->
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
-                            Status <span class="text-red-500">*</span>
-                        </label>
-                        <select name="status" 
-                                id="status" 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('status') border-red-500 @enderror"
-                                required>
-                            <option value="">Pilih Status</option>
-                            <option value="pending" {{ old('status', $clas->status ?? 'pending') == 'pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="approved" {{ old('status', $clas->status ?? '') == 'approved' ? 'selected' : '' }}>Approved</option>
-                            <option value="rejected" {{ old('status', $clas->status ?? '') == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                        </select>
-                        @error('status')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
                     <!-- Tanggal Mulai -->
                     <div>
                         <label for="start_date" class="block text-sm font-medium text-gray-700 mb-2">
@@ -254,4 +277,30 @@
         </div>
     </div>
 </div>
+
+<script>
+function addTrainer() {
+    const container = document.getElementById('trainers-container');
+    const trainerItem = document.createElement('div');
+    trainerItem.className = 'trainer-item flex gap-2';
+    trainerItem.innerHTML = `
+        <input type="text" 
+               name="trainer[]" 
+               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf]"
+               placeholder="Contoh: John Doe"
+               required>
+        <button type="button" 
+                onclick="removeTrainer(this)"
+                class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(trainerItem);
+}
+
+function removeTrainer(button) {
+    const trainerItem = button.closest('.trainer-item');
+    trainerItem.remove();
+}
+</script>
 @endsection

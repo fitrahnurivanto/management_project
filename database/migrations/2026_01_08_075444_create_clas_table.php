@@ -15,15 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->decimal('amount', 10, 2);
-            $table->decimal('cost', 10, 2);
-            $table->integer('meet');
-            $table->integer('duration');
+            $table->decimal('price', 15, 2); // Harga per siswa
+            $table->integer('amount'); // Jumlah siswa
+            $table->decimal('cost', 15, 2); // Biaya operasional
+            $table->integer('meet'); // Jumlah pertemuan
+            $table->integer('duration'); // Durasi per pertemuan (menit)
             $table->enum('method', ['online', 'offline']);
             $table->date('start_date');
             $table->date('end_date');
             $table->string('trainer');
-            $table->decimal('income', 10, 2);
+            $table->decimal('income', 15, 2); // Total pendapatan
             $table->text('description')->nullable();
             $table->enum('status', ['pending','approved', 'rejected'])->default('pending');
             $table->timestamps();

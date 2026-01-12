@@ -29,6 +29,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
     
+    // Google OAuth Routes
+    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+    
     // Forgot Password Routes
     Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
@@ -114,6 +118,7 @@ Route::middleware(['auth'])->group(function () {
         // Classes management (Academy only)
         Route::get('/classes', [ClasController::class, 'index'])->name('classes.index');
         Route::get('/classes/create', [ClasController::class, 'create'])->name('classes.create');
+        Route::get('/classes/approved', [ClasController::class, 'showclas'])->name('classes.showclas');
         Route::post('/classes', [ClasController::class, 'store'])->name('classes.store');
         Route::get('/classes/{clas}', [ClasController::class, 'show'])->name('classes.show');
         Route::get('/classes/{clas}/edit', [ClasController::class, 'edit'])->name('classes.edit');
@@ -124,6 +129,10 @@ Route::middleware(['auth'])->group(function () {
 
         // Tracking Kelas
         Route::get('/tracking', [ClasController::class, 'track'])->name('tracking.index');
+
+        // Payment Requests (Admin)
+        Route::resource('payment-requests', \App\Http\Controllers\Admin\PaymentRequestController::class)
+            ->only(['index', 'show', 'update']);
     });
 
     // Employee routes
@@ -133,6 +142,24 @@ Route::middleware(['auth'])->group(function () {
         // View assigned projects
         Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
         Route::get('/projects/{project}', [ProjectController::class, 'show'])->name('projects.show');
+
+        // Payment Requests
+        Route::resource('payment-requests', \App\Http\Controllers\Employee\PaymentRequestController::class)
+            ->only(['index', 'create', 'store', 'show']);
+
+        // Task Attachments
+        Route::post('/tasks/{task}/attachments', [\App\Http\Controllers\Employee\TaskAttachmentController::class, 'store'])
+            ->name('tasks.attachments.store');
+        Route::get('/attachments/{attachment}/download', [\App\Http\Controllers\Employee\TaskAttachmentController::class, 'download'])
+            ->name('tasks.download-attachment');
+        Route::delete('/attachments/{attachment}', [\App\Http\Controllers\Employee\TaskAttachmentController::class, 'destroy'])
+            ->name('tasks.attachments.destroy');
+
+        // Project Chat
+        Route::get('/projects/{project}/chat', [\App\Http\Controllers\Employee\ProjectChatController::class, 'index'])
+            ->name('projects.chat');
+        Route::post('/projects/{project}/chat', [\App\Http\Controllers\Employee\ProjectChatController::class, 'store'])
+            ->name('projects.chat.store');
     });
 });
 

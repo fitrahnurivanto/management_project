@@ -47,8 +47,24 @@
                             <p class="font-medium text-gray-900">{{ $clas->name }}</p>
                         </div>
                         <div>
+                            <p class="text-sm text-gray-600">Instansi</p>
+                            <p class="font-medium text-gray-900">{{ $clas->instansi ?? '-' }}</p>
+                        </div>
+                        <div class="col-span-2">
                             <p class="text-sm text-gray-600">Trainer</p>
-                            <p class="font-medium text-gray-900">{{ $clas->trainer }}</p>
+                            <div class="font-medium text-gray-900">
+                                @if(is_array($clas->trainer))
+                                    @foreach($clas->trainer as $trainer)
+                                        <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs mr-1 mb-1">
+                                            <i class="fas fa-user-tie mr-1"></i>{{ $trainer }}
+                                        </span>
+                                    @endforeach
+                                @else
+                                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                                        <i class="fas fa-user-tie mr-1"></i>{{ $clas->trainer }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                         <div>
                             <p class="text-sm text-gray-600">Metode</p>

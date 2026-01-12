@@ -146,9 +146,14 @@ class DashboardController extends Controller
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->join('projects', 'orders.id', '=', 'projects.order_id')
             ->whereIn('orders.payment_status', ['paid'])
             ->where('service_categories.division', $activeDivision)
-            ->select('services.name', DB::raw('SUM(order_items.subtotal) as total'))
+            ->select(
+                'services.name', 
+                DB::raw('SUM(order_items.subtotal) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
+            )
             ->groupBy('services.id', 'services.name')
             ->orderByDesc('total')
             ->limit(10) // Top 10 services
@@ -166,6 +171,7 @@ class DashboardController extends Controller
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->join('projects', 'orders.id', '=', 'projects.order_id')
             ->whereIn('orders.payment_status', ['paid'])
             ->where(function($q) {
                 $q->where('orders.order_date', '>=', now()->subMonths(12))
@@ -174,7 +180,8 @@ class DashboardController extends Controller
             ->where('service_categories.division', $activeDivision)
             ->select(
                 DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
-                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total')
+                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
             )
             ->groupBy('month')
             ->orderBy('month')
@@ -185,6 +192,7 @@ class DashboardController extends Controller
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->join('projects', 'orders.id', '=', 'projects.order_id')
             ->where('orders.payment_type', 'installment')
             ->whereIn('orders.payment_status', ['paid'])
             ->where('orders.remaining_amount', '>', 0)
@@ -195,7 +203,8 @@ class DashboardController extends Controller
             ->where('service_categories.division', $activeDivision)
             ->select(
                 DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
-                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total')
+                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
             )
             ->groupBy('month')
             ->orderBy('month')
@@ -441,7 +450,12 @@ class DashboardController extends Controller
         }
         
         $revenueByService = $revenueByServiceQuery
-            ->select('services.name', DB::raw('SUM(order_items.subtotal) as total'))
+            ->join('projects', 'orders.id', '=', 'projects.order_id')
+            ->select(
+                'services.name', 
+                DB::raw('SUM(order_items.subtotal) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
+            )
             ->groupBy('services.id', 'services.name')
             ->orderByDesc('total')
             ->limit(10)
@@ -468,7 +482,8 @@ class DashboardController extends Controller
             ->where('service_categories.division', $activeDivision)
             ->select(
                 DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
-                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total')
+                DB::raw('SUM(order_items.subtotal * orders.paid_amount / orders.total_amount) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
             )
             ->groupBy('month')
             ->orderBy('month')
@@ -479,6 +494,7 @@ class DashboardController extends Controller
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('services', 'order_items.service_id', '=', 'services.id')
             ->join('service_categories', 'services.category_id', '=', 'service_categories.id')
+            ->join('projects', 'orders.id', '=', 'projects.order_id')
             ->where('orders.payment_type', 'installment')
             ->whereIn('orders.payment_status', ['paid'])
             ->where('orders.remaining_amount', '>', 0)
@@ -489,7 +505,8 @@ class DashboardController extends Controller
             ->where('service_categories.division', $activeDivision)
             ->select(
                 DB::raw('DATE_FORMAT(COALESCE(orders.order_date, orders.confirmed_at), "%Y-%m") as month'),
-                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total')
+                DB::raw('SUM(order_items.subtotal * orders.remaining_amount / orders.total_amount) as total'),
+                DB::raw('COUNT(DISTINCT projects.id) as project_count')
             )
             ->groupBy('month')
             ->orderBy('month')

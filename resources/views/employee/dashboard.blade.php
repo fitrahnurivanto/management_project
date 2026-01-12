@@ -3,167 +3,118 @@
 @section('title', 'Employee Dashboard')
 
 @section('content')
-<div class="min-vh-100" style="background: #f3f4f6;">
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="fas fa-user-tie me-2"></i>Employee Portal
-            </a>
-            
-            <div class="ms-auto">
-                <div class="dropdown">
-                    <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>{{ auth()->user()->name }}
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="dropdown-item">
-                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
+<div class="p-6">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2"><i class="fas fa-tachometer-alt mr-2"></i>Dashboard</h2>
+        <p class="text-gray-600">Selamat datang, {{ auth()->user()->name }}!</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Active Projects</p>
+                    <h3 class="text-3xl font-bold text-gray-900">{{ $stats['active_projects'] }}</h3>
                 </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Dashboard Content -->
-    <div class="container py-5">
-        <div class="row mb-4">
-            <div class="col">
-                <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
-                <p class="text-muted">Selamat datang, {{ auth()->user()->name }}!</p>
-            </div>
-        </div>
-
-        <!-- Stats Cards -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1">Active Projects</p>
-                                <h3 class="mb-0">{{ $stats['active_projects'] }}</h3>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-project-diagram fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1">Pending Tasks</p>
-                                <h3 class="mb-0">{{ $stats['pending_tasks'] }}</h3>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-tasks fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted mb-1">Hours This Month</p>
-                                <h3 class="mb-0">{{ number_format($stats['hours_this_month'], 1) }}</h3>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-clock fa-2x text-success"></i>
-                            </div>
-                        </div>
-                    </div>
+                <div class="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-project-diagram text-2xl text-blue-600"></i>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4">
-            <!-- Assigned Projects -->
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Assigned Projects</h5>
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Pending Tasks</p>
+                    <h3 class="text-3xl font-bold text-gray-900">{{ $stats['pending_tasks'] }}</h3>
+                </div>
+                <div class="w-14 h-14 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-tasks text-2xl text-yellow-600"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Hours This Month</p>
+                    <h3 class="text-3xl font-bold text-gray-900">{{ number_format($stats['hours_this_month'], 1) }}</h3>
+                </div>
+                <div class="w-14 h-14 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-2xl text-green-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Assigned Projects -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h5 class="text-lg font-bold text-gray-900"><i class="fas fa-project-diagram mr-2"></i>Assigned Projects</h5>
+            </div>
+            <div class="p-6">
+                @if($projects->count() > 0)
+                    <div class="space-y-4">
+                        @foreach($projects as $project)
+                            <a href="{{ route('employee.projects.show', $project) }}" class="block p-4 rounded-lg border border-gray-200 hover:border-blue-400 hover:shadow-md transition">
+                                <div class="flex justify-between items-center mb-2">
+                                    <strong class="text-gray-900">{{ $project->project_name }}</strong>
+                                    @if($project->status == 'in_progress')
+                                        <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">In Progress</span>
+                                    @else
+                                        <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">{{ ucfirst($project->status) }}</span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <small class="text-gray-600">{{ $project->project_code }}</small>
+                                    <br>
+                                    <small class="text-gray-600">Client: {{ $project->client->user->name ?? $project->client->company_name ?? 'N/A' }}</small>
+                                </div>
+                            </a>
+                        @endforeach
                     </div>
-                    <div class="card-body">
-                        @if($projects->count() > 0)
-                            <div class="list-group list-group-flush">
-                                @foreach($projects as $project)
-                                    <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong>{{ $project->project_name }}</strong>
-                                            @if($project->status == 'in_progress')
-                                                <span class="badge bg-primary">In Progress</span>
-                                            @else
-                                                <span class="badge bg-warning">{{ ucfirst($project->status) }}</span>
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <small class="text-muted">{{ $project->project_code }}</small>
-                                            <br>
-                                            <small class="text-muted">Client: {{ $project->client->user->name }}</small>
-                                        </div>
+                @else
+                    <p class="text-gray-500 text-center py-8">Belum ada project yang di-assign</p>
+                @endif
+            </div>
+        </div>
+
+        <!-- Pending Tasks -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h5 class="text-lg font-bold text-gray-900"><i class="fas fa-tasks mr-2"></i>Pending Tasks</h5>
+            </div>
+            <div class="p-6">
+                @if($tasks->count() > 0)
+                    <div class="space-y-4">
+                        @foreach($tasks as $task)
+                            <div class="p-4 rounded-lg border border-gray-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div class="flex-1">
+                                        <strong class="text-gray-900 block">{{ $task->title }}</strong>
+                                        <small class="text-gray-600">{{ $task->project->project_name }}</small>
                                     </div>
-                                @endforeach
+                                    @if($task->priority == 'urgent')
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Urgent</span>
+                                    @elseif($task->priority == 'high')
+                                        <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">High</span>
+                                    @else
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">{{ ucfirst($task->priority) }}</span>
+                                    @endif
+                                </div>
+                                @if($task->due_date)
+                                    <small class="text-gray-600">
+                                        <i class="far fa-calendar mr-1"></i>Due: {{ $task->due_date->format('d M Y') }}
+                                    </small>
+                                @endif
                             </div>
-                        @else
-                            <p class="text-muted text-center py-4">Belum ada project yang di-assign</p>
-                        @endif
+                        @endforeach
                     </div>
-                </div>
-            </div>
-
-            <!-- Pending Tasks -->
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Pending Tasks</h5>
-                    </div>
-                    <div class="card-body">
-                        @if($tasks->count() > 0)
-                            <div class="list-group list-group-flush">
-                                @foreach($tasks as $task)
-                                    <div class="list-group-item border-0 px-0">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <strong>{{ $task->title }}</strong>
-                                            @if($task->priority == 'urgent')
-                                                <span class="badge bg-danger">Urgent</span>
-                                            @elseif($task->priority == 'high')
-                                                <span class="badge bg-warning">High</span>
-                                            @else
-                                                <span class="badge bg-secondary">{{ ucfirst($task->priority) }}</span>
-                                            @endif
-                                        </div>
-                                        <div>
-                                            <small class="text-muted">
-                                                <i class="fas fa-project-diagram me-1"></i>{{ $task->project->project_name }}
-                                            </small>
-                                            <br>
-                                            <small class="text-muted">
-                                                <i class="fas fa-calendar me-1"></i>Due: {{ $task->due_date ? $task->due_date->format('d M Y') : 'No deadline' }}
-                                            </small>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @else
-                            <p class="text-muted text-center py-4">Tidak ada task pending</p>
-                        @endif
-                    </div>
-                </div>
+                @else
+                    <p class="text-gray-500 text-center py-8">Tidak ada task pending</p>
+                @endif
             </div>
         </div>
     </div>

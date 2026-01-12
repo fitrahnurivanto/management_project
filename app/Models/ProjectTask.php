@@ -48,6 +48,14 @@ class ProjectTask extends Model
     }
 
     /**
+     * Get the attachments for the task.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(TaskAttachment::class, 'task_id');
+    }
+
+    /**
      * Scope a query to only include pending tasks.
      */
     public function scopePending($query)

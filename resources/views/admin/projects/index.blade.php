@@ -19,19 +19,20 @@
     <div class="bg-white rounded-xl shadow-sm mb-6">
         <div class="border-b border-gray-200">
             <nav class="flex -mb-px">
-                <a href="{{ route('admin.projects.index') }}" class="px-6 py-3 border-b-2 {{ !request('status') ? 'border-[#7b2cbf] text-[#7b2cbf]' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
+                @php $projectRoute = auth()->user()->isAdmin() ? 'admin.projects.index' : 'employee.projects.index'; @endphp
+                <a href="{{ route($projectRoute) }}" class="px-6 py-3 border-b-2 {{ !request('status') ? 'border-[#7b2cbf] text-[#7b2cbf]' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
                     <i class="fas fa-list mr-2"></i> Semua Project
                 </a>
-                <a href="{{ route('admin.projects.index', ['status' => 'pending']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'pending' ? 'border-yellow-600 text-yellow-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
+                <a href="{{ route($projectRoute, ['status' => 'pending']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'pending' ? 'border-yellow-600 text-yellow-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
                     <i class="fas fa-clock mr-2"></i> Pending
                 </a>
-                <a href="{{ route('admin.projects.index', ['status' => 'in_progress']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'in_progress' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
+                <a href="{{ route($projectRoute, ['status' => 'in_progress']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'in_progress' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
                     <i class="fas fa-spinner mr-2"></i> In Progress
                 </a>
-                <a href="{{ route('admin.projects.index', ['status' => 'completed']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'completed' ? 'border-green-600 text-green-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
+                <a href="{{ route($projectRoute, ['status' => 'completed']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'completed' ? 'border-green-600 text-green-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
                     <i class="fas fa-check-circle mr-2"></i> Completed
                 </a>
-                <a href="{{ route('admin.projects.index', ['status' => 'on_hold']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'on_hold' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
+                <a href="{{ route($projectRoute, ['status' => 'on_hold']) }}" class="px-6 py-3 border-b-2 {{ request('status') == 'on_hold' ? 'border-orange-600 text-orange-600' : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300' }} font-medium text-sm">
                     <i class="fas fa-pause-circle mr-2"></i> On Hold
                 </a>
                 
@@ -40,7 +41,7 @@
                 <div class="ml-auto flex items-center px-4 gap-3">
                     <div class="flex items-center">
                         <label class="text-xs text-gray-600 mr-2">Divisi:</label>
-                        <select onchange="window.location.href='{{ route('admin.projects.index') }}?division=' + this.value + '{{ request('status') ? '&status=' . request('status') : '' }}' + '{{ request('year') ? '&year=' . request('year') : '' }}'" class="text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <select onchange="window.location.href='{{ route($projectRoute) }}?division=' + this.value + '{{ request('status') ? '&status=' . request('status') : '' }}' + '{{ request('year') ? '&year=' . request('year') : '' }}'" class="text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                             <option value="all" {{ request('division') == 'all' || !request('division') ? 'selected' : '' }}>Semua</option>
                             <option value="agency" {{ request('division') == 'agency' ? 'selected' : '' }}>Agency</option>
                             <option value="academy" {{ request('division') == 'academy' ? 'selected' : '' }}>Academy</option>
@@ -52,7 +53,7 @@
                 <!-- Year Filter for All Admins -->
                 <div class="flex items-center {{ $user->isSuperAdmin() ? '' : 'ml-auto' }} px-4">
                     <label class="text-xs text-gray-600 mr-2">Tahun:</label>
-                    <select onchange="window.location.href='{{ route('admin.projects.index') }}?year=' + this.value + '{{ request('status') ? '&status=' . request('status') : '' }}' + '{{ request('division') ? '&division=' . request('division') : '' }}'" class="text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <select onchange="window.location.href='{{ route($projectRoute) }}?year=' + this.value + '{{ request('status') ? '&status=' . request('status') : '' }}' + '{{ request('division') ? '&division=' . request('division') : '' }}'" class="text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="all" {{ $selectedYear == 'all' ? 'selected' : '' }}>Semua Tahun</option>
                         @foreach($availableYears as $year)
                             <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>{{ $year }}</option>
@@ -177,7 +178,7 @@
 
             <!-- Actions -->
             <div class="p-4 bg-gray-50 flex gap-2">
-                <a href="{{ route('admin.projects.show', $project) }}" class="flex-1 bg-white text-[#7b2cbf] border border-[#7b2cbf] px-4 py-2 rounded-lg hover:bg-[#7b2cbf] hover:text-white transition text-center text-sm font-medium">
+                <a href="{{ route(auth()->user()->isAdmin() ? 'admin.projects.show' : 'employee.projects.show', $project) }}" class="flex-1 bg-white text-[#7b2cbf] border border-[#7b2cbf] px-4 py-2 rounded-lg hover:bg-[#7b2cbf] hover:text-white transition text-center text-sm font-medium">
                     <i class="fas fa-eye mr-1"></i> Detail
                 </a>
                 @if(auth()->user()->isAdmin())

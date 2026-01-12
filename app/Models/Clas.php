@@ -12,6 +12,7 @@ class Clas extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'instansi',
         'slug',
         'price',
         'amount',
@@ -36,6 +37,7 @@ class Clas extends Model
         'duration' => 'integer',
         'start_date' => 'date',
         'end_date' => 'date',
+        'trainer' => 'array',
     ];
 }
 
