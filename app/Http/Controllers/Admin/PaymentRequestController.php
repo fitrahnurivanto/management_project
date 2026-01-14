@@ -11,19 +11,18 @@ class PaymentRequestController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $query = PaymentRequest::with(['user', 'project.order.items.service.category', 'approver']);
+        $query = PaymentRequest::with(['user', 'project.order', 'clas', 'approver']);
 
         // Filter by division based on admin role
         if ($user->isAgencyAdmin()) {
-            // Agency admin: only see payment requests from agency projects
-            $query->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'agency');
-            });
+            // Agency admin: only see payment requests from agency projects (has project_id and order.division = agency)
+            $query->whereNotNull('project_id')
+                  ->whereHas('project.order', function($q) {
+                      $q->where('division', 'agency');
+                  });
         } elseif ($user->isAcademyAdmin()) {
-            // Academy admin: only see payment requests from academy projects
-            $query->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'academy');
-            });
+            // Academy admin: only see payment requests from academy classes (has class_id)
+            $query->whereNotNull('class_id');
         }
         // Super admin sees all payment requests (no filter)
 
@@ -32,38 +31,39 @@ class PaymentRequestController extends Controller
             $query->where('status', $request->status);
         }
 
-        $requests = $query->latest()->paginate(20);
+        $requests = $query->latest()->paginate(20)->appends($request->query());
 
         // Calculate pending count with division filter
         $pendingQuery = PaymentRequest::where('status', 'pending');
         if ($user->isAgencyAdmin()) {
-            $pendingQuery->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'agency');
-            });
+            $pendingQuery->whereNotNull('project_id')
+                        ->whereHas('project.order', function($q) {
+                            $q->where('division', 'agency');
+                        });
         } elseif ($user->isAcademyAdmin()) {
-            $pendingQuery->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'academy');
-            });
+            $pendingQuery->whereNotNull('class_id');
         }
         $pendingCount = $pendingQuery->count();
 
         // Calculate stats with division filter
         $statsQuery = PaymentRequest::query();
         if ($user->isAgencyAdmin()) {
-            $statsQuery->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'agency');
-            });
+            $statsQuery->whereNotNull('project_id')
+                      ->whereHas('project.order', function($q) {
+                          $q->where('division', 'agency');
+                      });
         } elseif ($user->isAcademyAdmin()) {
-            $statsQuery->whereHas('project.order.items.service.category', function($q) {
-                $q->where('division', 'academy');
-            });
+            $statsQuery->whereNotNull('class_id');
         }
 
         $stats = [
             'pending' => (clone $statsQuery)->where('status', 'pending')->count(),
             'approved' => (clone $statsQuery)->where('status', 'approved')->count(),
+            'processing' => (clone $statsQuery)->where('status', 'processing')->count(),
+            'paid' => (clone $statsQuery)->where('status', 'paid')->count(),
             'rejected' => (clone $statsQuery)->where('status', 'rejected')->count(),
-            'total_approved' => (clone $statsQuery)->where('status', 'approved')->sum('approved_amount'),
+            'total_approved' => (clone $statsQuery)->whereIn('status', ['approved', 'processing'])->sum('approved_amount'),
+            'total_paid' => (clone $statsQuery)->where('status', 'paid')->sum('approved_amount'),
         ];
 
 
@@ -108,4 +108,49 @@ class PaymentRequestController extends Controller
         return redirect()->route('admin.payment-requests.index')
             ->with('success', $message);
     }
+
+    /**
+     * Mark payment request as paid (for Finance role)
+     */
+    public function markAsPaid(Request $request, PaymentRequest $paymentRequest)
+    {
+        // Hanya payment request yang approved atau processing yang bisa dipaid
+        if (!in_array($paymentRequest->status, ['approved', 'processing'])) {
+            return back()->withErrors(['status' => 'Hanya payment request dengan status approved/processing yang bisa dibayar']);
+        }
+
+        $validated = $request->validate([
+            'payment_method' => 'required|string|max:50',
+            'payment_reference' => 'nullable|string|max:100',
+        ]);
+
+        $paymentRequest->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+            'paid_by' => auth()->id(),
+            'payment_method' => $validated['payment_method'],
+            'payment_reference' => $validated['payment_reference'] ?? null,
+        ]);
+
+        // TODO: Send notification to employee
+
+        return back()->with('success', 'Pembayaran berhasil dicatat. Employee akan menerima notifikasi.');
+    }
+
+    /**
+     * Mark as processing (ready for payment)
+     */
+    public function markAsProcessing(PaymentRequest $paymentRequest)
+    {
+        if ($paymentRequest->status !== 'approved') {
+            return back()->withErrors(['status' => 'Hanya payment request approved yang bisa diubah ke processing']);
+        }
+
+        $paymentRequest->update([
+            'status' => 'processing',
+        ]);
+
+        return back()->with('success', 'Status diubah menjadi Processing - Menunggu pembayaran dari Finance');
+    }
 }
+

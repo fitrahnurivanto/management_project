@@ -22,6 +22,8 @@ class Clas extends Model
         'method',
         'start_date',
         'end_date',
+        'start_time',
+        'end_time',
         'trainer',
         'income',
         'description',
@@ -37,6 +39,8 @@ class Clas extends Model
         'duration' => 'integer',
         'start_date' => 'date',
         'end_date' => 'date',
+        'start_time' => 'datetime:H:i',
+        'end_time' => 'datetime:H:i',
         'trainer' => 'array',
     ];
 }

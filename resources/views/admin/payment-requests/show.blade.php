@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
+@section('page-title', 'Review Payment Request')
+
 @section('content')
-<div class="p-6">
+<div class="p-8">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
@@ -20,7 +22,15 @@
             </span>
         @elseif($paymentRequest->status === 'approved')
             <span class="px-4 py-2 bg-green-100 text-green-800 text-sm font-semibold rounded-full flex items-center gap-2">
-                <i class="fas fa-check-circle"></i> Telah Disetujui
+                <i class="fas fa-check-circle"></i> Disetujui - Menunggu Finance
+            </span>
+        @elseif($paymentRequest->status === 'processing')
+            <span class="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full flex items-center gap-2">
+                <i class="fas fa-spinner"></i> Sedang Diproses Finance
+            </span>
+        @elseif($paymentRequest->status === 'paid')
+            <span class="px-4 py-2 bg-green-100 text-green-800 text-sm font-semibold rounded-full flex items-center gap-2">
+                <i class="fas fa-money-check-alt"></i> Sudah Dibayar
             </span>
         @else
             <span class="px-4 py-2 bg-red-100 text-red-800 text-sm font-semibold rounded-full flex items-center gap-2">
@@ -199,6 +209,126 @@ function submitForm(action) {
                     </div>
                 </div>
             @endif
+
+            <!-- Mark as Paid Form (for Finance - only show if approved or processing) -->
+            @if(in_array($paymentRequest->status, ['approved', 'processing']))
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-green-600 to-emerald-600">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-money-check-alt"></i>
+                            Finance - Konfirmasi Pembayaran
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                                <div class="text-sm text-yellow-800">
+                                    <p class="font-semibold">Untuk Tim Finance:</p>
+                                    <p>Pastikan transfer sudah dilakukan sebelum mengklik tombol "Tandai Sudah Dibayar"</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('admin.payment-requests.mark-as-paid', $paymentRequest) }}" method="POST">
+                            @csrf
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Metode Pembayaran <span class="text-red-500">*</span>
+                                </label>
+                                <select name="payment_method" required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                    <option value="">Pilih metode...</option>
+                                    <option value="Transfer Bank">Transfer Bank</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="E-Wallet">E-Wallet</option>
+                                    <option value="Cek">Cek</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-6">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Nomor Referensi Transfer (Optional)
+                                </label>
+                                <input type="text" name="payment_reference" maxlength="100"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                       placeholder="Contoh: TRF2026011400123">
+                                <p class="text-xs text-gray-500 mt-1">Nomor transaksi/referensi dari bank</p>
+                            </div>
+
+                            <div class="p-4 bg-green-50 border border-green-200 rounded-lg mb-4">
+                                <p class="text-green-800 font-semibold text-lg">
+                                    Jumlah: Rp {{ number_format($paymentRequest->approved_amount, 0, ',', '.') }}
+                                </p>
+                                <p class="text-green-700 text-sm">Kepada: {{ $paymentRequest->user->name }}</p>
+                            </div>
+
+                            <button type="submit" 
+                                    class="w-full bg-green-600 text-white px-6 py-4 rounded-lg hover:bg-green-700 transition font-semibold flex items-center justify-center gap-2">
+                                <i class="fas fa-check-double"></i> Tandai Sudah Dibayar
+                            </button>
+                        </form>
+
+                        @if($paymentRequest->status === 'approved')
+                        <form action="{{ route('admin.payment-requests.mark-as-processing', $paymentRequest) }}" method="POST" class="mt-3">
+                            @csrf
+                            <button type="submit" 
+                                    class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                                <i class="fas fa-spinner"></i> Tandai Sebagai "Processing"
+                            </button>
+                            <p class="text-xs text-gray-500 mt-2 text-center">
+                                Ubah status menjadi "sedang diproses pembayaran"
+                            </p>
+                        </form>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
+            <!-- Payment Confirmation Info (if already paid) -->
+            @if($paymentRequest->status === 'paid')
+                <div class="bg-white rounded-xl shadow-sm border border-green-300">
+                    <div class="px-6 py-4 border-b border-green-200 bg-gradient-to-r from-green-500 to-emerald-500">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            Pembayaran Sudah Cair
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Jumlah Dibayar:</span>
+                                <span class="text-lg font-bold text-green-700">
+                                    Rp {{ number_format($paymentRequest->approved_amount, 0, ',', '.') }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Metode:</span>
+                                <span class="font-semibold text-gray-900">{{ $paymentRequest->payment_method }}</span>
+                            </div>
+                            @if($paymentRequest->payment_reference)
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Referensi:</span>
+                                <span class="font-mono text-sm font-semibold text-gray-900">{{ $paymentRequest->payment_reference }}</span>
+                            </div>
+                            @endif
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Dibayar pada:</span>
+                                <span class="text-sm font-semibold text-gray-900">
+                                    {{ $paymentRequest->paid_at->format('d M Y, H:i') }}
+                                </span>
+                            </div>
+                            @if($paymentRequest->payer)
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Dibayar oleh:</span>
+                                <span class="text-sm font-semibold text-gray-900">{{ $paymentRequest->payer->name }}</span>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <!-- Sidebar -->
@@ -224,12 +354,12 @@ function submitForm(action) {
                         @if($paymentRequest->status !== 'pending')
                             <!-- Processed -->
                             <div class="flex items-start gap-3">
-                                <div class="w-8 h-8 {{ $paymentRequest->status === 'approved' ? 'bg-green-100' : 'bg-red-100' }} rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="fas {{ $paymentRequest->status === 'approved' ? 'fa-check' : 'fa-times' }} {{ $paymentRequest->status === 'approved' ? 'text-green-600' : 'text-red-600' }} text-xs"></i>
+                                <div class="w-8 h-8 {{ $paymentRequest->status === 'approved' ? 'bg-green-100' : ($paymentRequest->status === 'paid' ? 'bg-green-100' : 'bg-red-100') }} rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas {{ in_array($paymentRequest->status, ['approved', 'processing', 'paid']) ? 'fa-check' : 'fa-times' }} {{ in_array($paymentRequest->status, ['approved', 'processing', 'paid']) ? 'text-green-600' : 'text-red-600' }} text-xs"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm font-semibold text-gray-900">
-                                        {{ $paymentRequest->status === 'approved' ? 'Disetujui' : 'Ditolak' }}
+                                        {{ in_array($paymentRequest->status, ['approved', 'processing', 'paid']) ? 'Disetujui' : 'Ditolak' }}
                                     </p>
                                     <p class="text-xs text-gray-500">
                                         {{ $paymentRequest->approved_at ? $paymentRequest->approved_at->format('d M Y, H:i') : $paymentRequest->updated_at->format('d M Y, H:i') }}
@@ -239,6 +369,35 @@ function submitForm(action) {
                                     @endif
                                 </div>
                             </div>
+
+                            @if($paymentRequest->status === 'processing')
+                            <!-- Processing -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-spinner text-blue-600 text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">Sedang Diproses</p>
+                                    <p class="text-xs text-gray-500">Menunggu pembayaran dari Finance</p>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if($paymentRequest->status === 'paid' && $paymentRequest->paid_at)
+                            <!-- Paid -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-money-check-alt text-green-600 text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">Sudah Dibayar</p>
+                                    <p class="text-xs text-gray-500">{{ $paymentRequest->paid_at->format('d M Y, H:i') }}</p>
+                                    @if($paymentRequest->payer)
+                                        <p class="text-xs text-gray-600 mt-1">oleh {{ $paymentRequest->payer->name }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
                         @endif
                     </div>
                 </div>

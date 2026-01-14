@@ -36,50 +36,10 @@
         max-height: 700px;
         overflow-y: auto;
     }
-    
-    /* Loading overlay */
-    #dashboardLoader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(4px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-    }
-    
-    #dashboardLoader.active {
-        display: flex;
-    }
-    
-    .loader-spinner {
-        width: 60px;
-        height: 60px;
-        border: 4px solid #e5e7eb;
-        border-top-color: #4f46e5;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
 </style>
 @endpush
 
 @section('content')
-<!-- Loading Overlay -->
-<div id="dashboardLoader">
-    <div class="text-center">
-        <div class="loader-spinner mx-auto mb-4"></div>
-        <p class="text-gray-600 font-medium">Memuat data...</p>
-    </div>
-</div>
-
 <!-- Division Switcher for Super Admin -->
 @if($user->isSuperAdmin())
 <div class="mb-6">
@@ -122,8 +82,12 @@
         @endif
     </h4>
     
-    <div class="flex gap-3">
-        <select id="periodFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex gap-3">
+        @if($user->isSuperAdmin())
+            <input type="hidden" name="division" value="{{ request('division', $activeDivision) }}">
+        @endif
+        
+        <select name="period" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" onchange="this.form.submit()">
             <option value="all" {{ $period == 'all' ? 'selected' : '' }}>Semua Periode</option>
             <option value="today" {{ $period == 'today' ? 'selected' : '' }}>Hari Ini</option>
             <option value="this_week" {{ $period == 'this_week' ? 'selected' : '' }}>Minggu Ini</option>
@@ -131,23 +95,20 @@
             <option value="this_year" {{ $period == 'this_year' ? 'selected' : '' }}>Tahun Ini</option>
         </select>
         
-        <select id="yearFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+        <select name="year" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" onchange="this.form.submit()">
             <option value="all" {{ request('year', 'all') == 'all' ? 'selected' : '' }}>Semua Tahun</option>
             @for($y = now()->year; $y >= 2023; $y--)
                 <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endfor
         </select>
         
-        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white">
+        <select name="status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white" onchange="this.form.submit()">
             <option value="all" {{ $status == 'all' ? 'selected' : '' }}>Semua Status</option>
             <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Selesai</option>
             <option value="active" {{ $status == 'active' ? 'selected' : '' }}>Aktif</option>
         </select>
-        
-        @if($user->isSuperAdmin())
-            <input type="hidden" id="divisionFilter" value="{{ request('division', $activeDivision) }}">
-        @endif
-    </div>
+    </form>
+</div>
 </div>
 <!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -414,6 +375,139 @@
     </div>
 </div>
 
+<!-- Ongoing Classes (Kelas Berjalan) - Only for Academy -->
+@if($activeDivision === 'academy')
+<div class="bg-white rounded-xl shadow-sm mb-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <div>
+            <h5 class="text-lg font-bold text-gray-900"><i class="fas fa-chalkboard-teacher mr-2 text-green-600"></i>Kelas Berjalan</h5>
+            <p class="text-sm text-gray-600">Kelas yang sedang aktif berlangsung</p>
+        </div>
+        <div class="flex items-center gap-3">
+            @if($ongoingClasses->count() > 0)
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">
+                {{ $ongoingClasses->count() }} Kelas Aktif
+            </span>
+            @else
+            <span class="px-3 py-1 bg-gray-100 text-gray-600 text-sm font-semibold rounded-full">
+                Tidak ada kelas aktif
+            </span>
+            @endif
+            <a href="{{ route('admin.classes.index') }}" class="text-green-600 hover:text-green-700 font-medium text-sm">
+                <i class="fas fa-list mr-1"></i>Lihat Semua Kelas
+            </a>
+        </div>
+    </div>
+    @if($ongoingClasses->count() > 0)
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Nama Kelas</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Instansi</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Periode</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Siswa</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Pertemuan</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Metode</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Trainer</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Income</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Progress</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                @foreach($ongoingClasses as $class)
+                @php
+                    $totalDays = $class->start_date->diffInDays($class->end_date) + 1;
+                    $daysElapsed = $class->start_date->diffInDays(now()) + 1;
+                    $progressPercent = min(100, round(($daysElapsed / $totalDays) * 100));
+                @endphp
+                <tr class="hover:bg-green-50 transition">
+                    <td class="px-6 py-4">
+                        <div>
+                            <a href="{{ route('admin.classes.show', $class) }}" class="font-semibold text-gray-900 hover:text-green-600">{{ $class->name }}</a>
+                            @if($class->description)
+                            <div class="text-sm text-gray-600 mt-1">{{ Str::limit($class->description, 40) }}</div>
+                            @endif
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">{{ $class->instansi ?? '-' }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm">
+                            <div class="text-gray-900 font-medium">{{ $class->start_date->format('d M Y') }}</div>
+                            <div class="text-gray-600">s/d {{ $class->end_date->format('d M Y') }}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-users text-gray-500"></i>
+                            <span class="font-semibold text-gray-900">{{ $class->amount }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar-check text-gray-500"></i>
+                            <span class="font-semibold text-gray-900">{{ $class->meet }}x</span>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">{{ $class->duration }} menit</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        @if($class->method == 'online')
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                                <i class="fas fa-laptop mr-1"></i>Online
+                            </span>
+                        @else
+                            <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                                <i class="fas fa-building mr-1"></i>Offline
+                            </span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm text-gray-900">
+                            @if(is_array($class->trainer))
+                                @foreach($class->trainer as $index => $trainer)
+                                    {{ $trainer }}{{ $index < count($class->trainer) - 1 ? ',' : '' }}
+                                @endforeach
+                            @else
+                                {{ $class->trainer }}
+                            @endif
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="font-semibold text-green-600">
+                            Rp {{ number_format($class->income, 0, ',', '.') }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="w-32">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-semibold text-gray-700">{{ $progressPercent }}%</span>
+                                <span class="text-xs text-gray-600">{{ $daysElapsed }}/{{ $totalDays }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-600 h-2 rounded-full transition-all" style="width: {{ $progressPercent }}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @else
+    <div class="p-8 text-center">
+        <i class="fas fa-chalkboard-teacher text-6xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500 text-lg mb-2">Tidak ada kelas yang sedang berjalan saat ini</p>
+        <p class="text-gray-400 text-sm mb-4">Kelas berjalan adalah kelas dengan status "approved" dan berada dalam periode aktif (antara start_date dan end_date)</p>
+        <a href="{{ route('admin.classes.index') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+            <i class="fas fa-list mr-2"></i>Lihat Semua Kelas
+        </a>
+    </div>
+    @endif
+</div>
+@endif
+
 <!-- Project Calendar (Collapsible) -->
 <div class="bg-white rounded-2xl shadow-sm mb-6">
     <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="toggleCalendar()">
@@ -589,486 +683,14 @@
     }
 
     // ========================================
-    // AJAX Dashboard Filter System
+    // CHART INITIALIZATION (NO AJAX)
     // ========================================
-    let dashboardCharts = {}; // Store chart instances for updates
-    
-    // Add event listeners to filters
-    document.addEventListener('DOMContentLoaded', function() {
-        const periodFilter = document.getElementById('periodFilter');
-        const yearFilter = document.getElementById('yearFilter');
-        const statusFilter = document.getElementById('statusFilter');
-        
-        if (periodFilter) periodFilter.addEventListener('change', applyFilters);
-        if (yearFilter) yearFilter.addEventListener('change', applyFilters);
-        if (statusFilter) statusFilter.addEventListener('change', applyFilters);
-    });
-    
-    function applyFilters() {
-        const loader = document.getElementById('dashboardLoader');
-        loader.classList.add('active');
-        
-        const period = document.getElementById('periodFilter').value;
-        const year = document.getElementById('yearFilter').value;
-        const status = document.getElementById('statusFilter').value;
-        const division = document.getElementById('divisionFilter')?.value || '';
-        
-        const params = new URLSearchParams({
-            period: period,
-            year: year,
-            status: status
-        });
-        
-        if (division) {
-            params.append('division', division);
-        }
-        
-        const url = '{{ route("admin.dashboard.filter-data") }}?' + params.toString();
-        console.log('Fetching:', url);
-        
-        fetch(url)
-            .then(response => {
-                console.log('Response status:', response.status);
-                if (!response.ok) {
-                    throw new Error('HTTP error ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Data received:', data);
-                updateStats(data.stats);
-                updateCharts(data.charts);
-                createComparisonChart(data.stats); // Update comparison chart
-                updateActivities(data.activities);
-                loader.classList.remove('active');
-            })
-            .catch(error => {
-                console.error('Error fetching dashboard data:', error);
-                loader.classList.remove('active');
-                alert('Terjadi kesalahan saat memuat data: ' + error.message + '. Silakan refresh halaman atau cek console untuk detail.');
-            });
-    }
-    
-    function updateStats(stats) {
-        // Update Revenue
-        document.querySelector('[data-stat="totalRevenue"]').textContent = 
-            'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalRevenue);
-        
-        // Update Cost
-        document.querySelector('[data-stat="totalCost"]').textContent = 
-            'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalCost);
-        
-        // Update Profit
-        const profitEl = document.querySelector('[data-stat="totalProfit"]');
-        profitEl.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(stats.totalProfit);
-        profitEl.className = stats.totalProfit >= 0 ? 'text-2xl font-bold text-green-500' : 'text-2xl font-bold text-red-500';
-        
-        // Update Profit Margin
-        document.querySelector('[data-stat="profitMargin"]').textContent = 
-            stats.profitMargin.toFixed(1) + '%';
-        
-        // Update Projects counts
-        document.querySelector('[data-stat="totalProjects"]').textContent = stats.totalProjects;
-        document.querySelector('[data-stat="completedProjects"]').textContent = stats.completedProjects;
-        document.querySelector('[data-stat="activeProjects"]').textContent = stats.activeProjects;
-        
-        // Update Growth indicators
-        updateGrowthIndicator('revenueGrowth', stats.revenueGrowth);
-        updateGrowthIndicator('costGrowth', stats.costGrowth, true); // inverted (lower is better)
-        updateGrowthIndicator('profitGrowth', stats.profitGrowth);
-        updateMarginChange(stats.marginChange);
-    }
-    
-    function updateGrowthIndicator(id, value, inverted = false) {
-        const el = document.querySelector('[data-growth="' + id + '"]');
-        if (!el) return;
-        
-        const isPositive = inverted ? value <= 0 : value >= 0;
-        const colorClass = isPositive ? 'text-green-500' : 'text-red-500';
-        const icon = value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
-        
-        el.className = colorClass + ' text-sm mt-1';
-        el.innerHTML = '<i class="fas ' + icon + '"></i> ' + (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
-    }
-    
-    function updateMarginChange(value) {
-        const el = document.querySelector('[data-growth="marginChange"]');
-        if (!el) return;
-        
-        if (Math.abs(value) > 0.1) {
-            const colorClass = value >= 0 ? 'text-green-500' : 'text-red-500';
-            const icon = value >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
-            el.className = colorClass + ' text-sm mt-1';
-            el.innerHTML = '<i class="fas ' + icon + '"></i> ' + (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
-        } else {
-            el.className = 'text-blue-500 text-sm mt-1';
-            el.innerHTML = '<i class="fas fa-minus"></i> Stabil';
-        }
-    }
-    
-    function updateCharts(charts) {
-        // Destroy existing charts
-        if (dashboardCharts.revenue) {
-            dashboardCharts.revenue.destroy();
-            dashboardCharts.revenue = null;
-        }
-        if (dashboardCharts.outstanding) {
-            dashboardCharts.outstanding.destroy();
-            dashboardCharts.outstanding = null;
-        }
-        if (dashboardCharts.service) {
-            dashboardCharts.service.destroy();
-            dashboardCharts.service = null;
-        }
-        if (dashboardCharts.projects) {
-            dashboardCharts.projects.destroy();
-            dashboardCharts.projects = null;
-        }
-        if (dashboardCharts.comparison) {
-            dashboardCharts.comparison.destroy();
-            dashboardCharts.comparison = null;
-        }
-        
-        // Recreate charts with new data
-        createRevenueChart(charts.monthlyRevenue);
-        createOutstandingChart(charts.outstandingPayments);
-        createServiceChart(charts.revenueByService);
-        createProjectsChart(charts.topProjects);
-    }
-    
-    function createComparisonChart(stats) {
-        const ctx = document.getElementById('comparisonChart');
-        if (!ctx) return;
-        
-        dashboardCharts.comparison = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Revenue', 'Cost', 'Profit'],
-                datasets: [{
-                    label: 'Amount',
-                    data: [stats.totalRevenue, stats.totalCost, stats.totalProfit],
-                    backgroundColor: [
-                        'rgba(16, 185, 129, 0.8)',
-                        'rgba(239, 68, 68, 0.8)',
-                        'rgba(102, 126, 234, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(16, 185, 129, 1)',
-                        'rgba(239, 68, 68, 1)',
-                        'rgba(102, 126, 234, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.label + ': Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    function createRevenueChart(data) {
-        const ctx = document.getElementById('revenueChart');
-        if (!ctx) return;
-        
-        dashboardCharts.revenue = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(item => item.month),
-                datasets: [{
-                    label: 'Total Pendapatan',
-                    data: data.map(item => item.total),
-                    backgroundColor: 'rgba(79, 70, 229, 0.8)',
-                    borderColor: 'rgba(79, 70, 229, 1)',
-                    borderWidth: 2,
-                    borderRadius: 1,
-                    borderSkipped: false,
-                    barPercentage: 0.5,
-                    categoryPercentage: 0.6,
-                    maxBarThickness: 80
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            padding: 15,
-                            font: { size: 12, weight: 'bold' }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const item = data[context.dataIndex];
-                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
-                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
-                                return [amount, projects];
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                    },
-                    x: {
-                        offset: true,
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
-    
-    function createOutstandingChart(data) {
-        const ctx = document.getElementById('outstandingChart');
-        if (!ctx) return;
-        
-        dashboardCharts.outstanding = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(item => item.month),
-                datasets: [{
-                    label: 'Belum Lunas',
-                    data: data.map(item => item.total),
-                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
-                    borderColor: 'rgba(239, 68, 68, 1)',
-                    borderWidth: 2,
-                    borderRadius: 1,
-                    borderSkipped: false,
-                    barPercentage: 0.5,
-                    categoryPercentage: 0.6,
-                    maxBarThickness: 80
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            padding: 15,
-                            font: { size: 12, weight: 'bold' }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const item = data[context.dataIndex];
-                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.y);
-                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
-                                return [amount, projects];
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                    },
-                    x: {
-                        offset: true,
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
-    
-    function createServiceChart(data) {
-        const ctx = document.getElementById('serviceChart');
-        if (!ctx || data.length === 0) return;
-        
-        dashboardCharts.service = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: data.map(item => item.name),
-                datasets: [{
-                    data: data.map(item => item.total),
-                    backgroundColor: [
-                        'rgba(79, 70, 229, 0.8)',
-                        'rgba(16, 185, 129, 0.8)',
-                        'rgba(251, 146, 60, 0.8)',
-                        'rgba(239, 68, 68, 0.8)',
-                        'rgba(168, 85, 247, 0.8)',
-                        'rgba(236, 72, 153, 0.8)',
-                        'rgba(14, 165, 233, 0.8)',
-                        'rgba(245, 158, 11, 0.8)',
-                        'rgba(59, 130, 246, 0.8)',
-                        'rgba(34, 197, 94, 0.8)'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            font: { size: 11 },
-                            generateLabels: function(chart) {
-                                const data = chart.data;
-                                if (data.labels.length && data.datasets.length) {
-                                    return data.labels.map(function(label, i) {
-                                        const value = data.datasets[0].data[i];
-                                        return {
-                                            text: label + ': Rp ' + new Intl.NumberFormat('id-ID').format(value),
-                                            fillStyle: data.datasets[0].backgroundColor[i],
-                                            hidden: false,
-                                            index: i
-                                        };
-                                    });
-                                }
-                                return [];
-                            }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const item = data[context.dataIndex];
-                                const amount = 'Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed);
-                                const projects = item.project_count + ' project' + (item.project_count > 1 ? 's' : '');
-                                return [amount, projects];
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-    
-    function createProjectsChart(data) {
-        const ctx = document.getElementById('projectsChart');
-        if (!ctx || data.length === 0) return;
-        
-        dashboardCharts.projects = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(item => item.title),
-                datasets: [{
-                    label: 'Profit',
-                    data: data.map(item => item.profit),
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    borderColor: 'rgba(16, 185, 129, 1)',
-                    borderWidth: 2,
-                    borderRadius: 1,
-                    borderSkipped: false
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            padding: 15,
-                            font: { size: 12, weight: 'bold' }
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return 'Profit: Rp ' + new Intl.NumberFormat('id-ID').format(context.parsed.x);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                            }
-                        },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                    },
-                    y: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-    }
-    
-    function updateActivities(activities) {
-        const container = document.querySelector('[data-activities="container"]');
-        if (!container) return;
-        
-        if (activities.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada aktivitas</p>';
-            return;
-        }
-        
-        let html = '<div class="space-y-4">';
-        activities.forEach(function(activity) {
-            html += '<div class="flex justify-between items-start py-3 border-b border-gray-100 last:border-0">';
-            html += '  <div class="flex items-start gap-3">';
-            html += '    <i class="fas fa-circle text-indigo-500 text-xs mt-2"></i>';
-            html += '    <div>';
-            html += '      <p class="text-gray-800">';
-            html += '        <strong>' + activity.user_name + '</strong>';
-            html += '        <span class="text-gray-600"> - ' + activity.description + '</span>';
-            html += '      </p>';
-            html += '    </div>';
-            html += '  </div>';
-            html += '  <small class="text-gray-500 text-sm whitespace-nowrap ml-4">' + activity.time_ago + '</small>';
-            html += '</div>';
-        });
-        html += '</div>';
-        
-        container.innerHTML = html;
-    }
     
     // Chart.js default config
     Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
     Chart.defaults.color = '#6b7280';
+
+    let dashboardCharts = {}; // Store chart instances
 
     // 1. Monthly Revenue Trend (Bar Chart)
     const revenueCtx = document.getElementById('revenueChart');

@@ -12,6 +12,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ClasController;
+use App\Http\Controllers\TrainerController;
 
 // Public routes - Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -93,6 +94,10 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/projects/{project}/expenses/{expense}', [ProjectController::class, 'updateExpense'])->name('projects.expenses.update');
         Route::delete('/projects/{project}/expenses/{expense}', [ProjectController::class, 'deleteExpense'])->name('projects.expenses.delete');
         
+        // Project Chat (Admin)
+        Route::post('/projects/{project}/chat', [ProjectController::class, 'storeChat'])->name('projects.chat.store');
+        Route::get('/projects/{project}/chats', [ProjectController::class, 'getChats'])->name('projects.chat.get');
+        
         // Team member management
         Route::post('/projects/{project}/team-members', [ProjectController::class, 'assignTeamMember'])->name('projects.assignTeamMember');
         Route::delete('/projects/{project}/team-members/{member}', [ProjectController::class, 'removeTeamMember'])->name('projects.removeTeamMember');
@@ -129,10 +134,25 @@ Route::middleware(['auth'])->group(function () {
 
         // Tracking Kelas
         Route::get('/tracking', [ClasController::class, 'track'])->name('tracking.index');
+        
+        // Trainer Management
+        Route::get('/trainer',[TrainerController::class, 'index'])->name('trainer.index');
+        Route::get('/trainer/create',[TrainerController::class, 'create'])->name('trainer.create');
+        Route::post('/trainer',[TrainerController::class, 'store'])->name('trainer.store');
+        Route::get('/trainer/{trainer}',[TrainerController::class, 'show'])->name('trainer.show');
+        Route::get('/trainer/{trainer}/edit',[TrainerController::class, 'edit'])->name('trainer.edit');
+        Route::put('/trainer/{trainer}',[TrainerController::class, 'update'])->name('trainer.update');
+        Route::delete('/trainer/{trainer}',[TrainerController::class, 'destroy'])->name('trainer.destroy');
 
         // Payment Requests (Admin)
         Route::resource('payment-requests', \App\Http\Controllers\Admin\PaymentRequestController::class)
             ->only(['index', 'show', 'update']);
+        
+        // Payment Request Actions
+        Route::post('/payment-requests/{paymentRequest}/mark-as-paid', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'markAsPaid'])
+            ->name('payment-requests.mark-as-paid');
+        Route::post('/payment-requests/{paymentRequest}/mark-as-processing', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'markAsProcessing'])
+            ->name('payment-requests.mark-as-processing');
     });
 
     // Employee routes
@@ -160,6 +180,19 @@ Route::middleware(['auth'])->group(function () {
             ->name('projects.chat');
         Route::post('/projects/{project}/chat', [\App\Http\Controllers\Employee\ProjectChatController::class, 'store'])
             ->name('projects.chat.store');
+    });
+
+    // Client routes
+    Route::middleware(['client'])->prefix('client')->name('client.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'clientDashboard'])->name('dashboard');
+        
+        // Client Projects - View and Monitor
+        Route::get('/projects', [\App\Http\Controllers\Client\ClientProjectController::class, 'index'])->name('projects.index');
+        Route::get('/projects/{project}', [\App\Http\Controllers\Client\ClientProjectController::class, 'show'])->name('projects.show');
+        
+        // Project Chat (Global - Client, Team & Admin)
+        Route::post('/projects/{project}/chat', [\App\Http\Controllers\Client\ClientProjectController::class, 'storeChat'])->name('projects.chat');
+        Route::get('/projects/{project}/chat/messages', [\App\Http\Controllers\Client\ClientProjectController::class, 'getChats'])->name('projects.chat.messages');
     });
 });
 

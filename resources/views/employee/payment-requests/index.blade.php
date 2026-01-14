@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
+@section('page-title', 'Payment Requests')
+
 @section('content')
-<div class="p-6">
+<div class="p-8">
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Permintaan Pembayaran Saya</h1>

@@ -10,51 +10,68 @@ use Illuminate\Http\Request;
 
 class PaymentRequestController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $requests = PaymentRequest::with(['project', 'approver'])
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->paginate(15);
+        $query = PaymentRequest::with(['project', 'clas', 'approver'])
+            ->where('user_id', auth()->id());
+
+        // Filter by status if provided
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $requests = $query->latest()->paginate(15)->appends($request->query());
 
         return view('employee.payment-requests.index', compact('requests'));
     }
 
     public function create()
     {
-        // Get projects where user is a team member
+        // Get projects where user is a team member (agency)
         $projects = Project::whereHas('teams.members', function($q) {
             $q->where('user_id', auth()->id());
         })
         ->whereIn('status', ['in_progress', 'on_hold'])
         ->get();
 
-        return view('employee.payment-requests.create', compact('projects'));
+        // Get classes where user might be trainer (academy)
+        $classes = \App\Models\Clas::where('status', 'approved')
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        return view('employee.payment-requests.create', compact('projects', 'classes'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'project_id' => 'required|exists:projects,id',
+            'type' => 'required|in:project,class',
+            'project_id' => 'required_if:type,project|nullable|exists:projects,id',
+            'class_id' => 'required_if:type,class|nullable|exists:clas,id',
             'requested_amount' => 'required|numeric|min:0',
+            'hours_worked' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Verify user is member of the project
-        $isMember = TeamMember::where('user_id', auth()->id())
-            ->whereHas('team', function($q) use ($validated) {
-                $q->where('project_id', $validated['project_id']);
-            })
-            ->exists();
+        if ($validated['type'] === 'project') {
+            // Verify user is member of the project
+            $isMember = TeamMember::where('user_id', auth()->id())
+                ->whereHas('team', function($q) use ($validated) {
+                    $q->where('project_id', $validated['project_id']);
+                })
+                ->exists();
 
-        if (!$isMember) {
-            return back()->withErrors(['project_id' => 'Anda bukan anggota project ini']);
+            if (!$isMember) {
+                return back()->withErrors(['project_id' => 'Anda bukan anggota project ini']);
+            }
         }
 
         PaymentRequest::create([
             'user_id' => auth()->id(),
-            'project_id' => $validated['project_id'],
+            'project_id' => $validated['type'] === 'project' ? $validated['project_id'] : null,
+            'class_id' => $validated['type'] === 'class' ? $validated['class_id'] : null,
             'requested_amount' => $validated['requested_amount'],
+            'hours_worked' => $validated['hours_worked'] ?? null,
             'notes' => $validated['notes'],
             'status' => 'pending',
         ]);

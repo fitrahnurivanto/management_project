@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
+@section('page-title', 'Payment Requests')
+
 @section('content')
-<div class="p-6">
+<div class="p-8">
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
@@ -23,51 +25,68 @@
     @endif
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 border border-yellow-200">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-5 border border-yellow-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-yellow-700 text-sm font-medium">Pending</p>
+                    <p class="text-yellow-700 text-xs font-medium">Pending Review</p>
                     <h3 class="text-2xl font-bold text-yellow-900 mt-1">{{ $stats['pending'] ?? 0 }}</h3>
                 </div>
                 <div class="bg-yellow-200 p-3 rounded-lg">
-                    <i class="fas fa-clock text-yellow-700 text-xl"></i>
+                    <i class="fas fa-clock text-yellow-700 text-lg"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-green-700 text-sm font-medium">Disetujui</p>
+                    <p class="text-green-700 text-xs font-medium">Approved</p>
                     <h3 class="text-2xl font-bold text-green-900 mt-1">{{ $stats['approved'] ?? 0 }}</h3>
                 </div>
                 <div class="bg-green-200 p-3 rounded-lg">
-                    <i class="fas fa-check-circle text-green-700 text-xl"></i>
+                    <i class="fas fa-check-circle text-green-700 text-lg"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-6 border border-red-200">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-red-700 text-sm font-medium">Ditolak</p>
+                    <p class="text-blue-700 text-xs font-medium">Processing</p>
+                    <h3 class="text-2xl font-bold text-blue-900 mt-1">{{ $stats['processing'] ?? 0 }}</h3>
+                </div>
+                <div class="bg-blue-200 p-3 rounded-lg">
+                    <i class="fas fa-spinner text-blue-700 text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-5 border border-emerald-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-emerald-700 text-xs font-medium">Paid</p>
+                    <h3 class="text-2xl font-bold text-emerald-900 mt-1">{{ $stats['paid'] ?? 0 }}</h3>
+                    <p class="text-xs text-emerald-600 mt-1">Rp {{ number_format($stats['total_paid'] ?? 0, 0, ',', '.') }}</p>
+                </div>
+                <div class="bg-emerald-200 p-3 rounded-lg">
+                    <i class="fas fa-money-check-alt text-emerald-700 text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-5 border border-red-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-red-700 text-xs font-medium">Rejected</p>
                     <h3 class="text-2xl font-bold text-red-900 mt-1">{{ $stats['rejected'] ?? 0 }}</h3>
                 </div>
                 <div class="bg-red-200 p-3 rounded-lg">
-                    <i class="fas fa-times-circle text-red-700 text-xl"></i>
+                    <i class="fas fa-times-circle text-red-700 text-lg"></i>
                 </div>
             </div>
         </div>
-
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-blue-700 text-sm font-medium">Total Disetujui</p>
-                    <h3 class="text-lg font-bold text-blue-900 mt-1">Rp {{ number_format($stats['total_approved'] ?? 0, 0, ',', '.') }}</h3>
-                </div>
-                <div class="bg-blue-200 p-3 rounded-lg">
-                    <i class="fas fa-money-bill-wave text-blue-700 text-xl"></i>
+    </div>
                 </div>
             </div>
         </div>
@@ -82,6 +101,8 @@
                     <option value="">Semua Status</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Disetujui</option>
+                    <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
+                    <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>Sudah Dibayar</option>
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Ditolak</option>
                 </select>
             </div>
@@ -157,6 +178,14 @@
                                 @elseif($request->status === 'approved')
                                     <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1 w-fit">
                                         <i class="fas fa-check"></i> Disetujui
+                                    </span>
+                                @elseif($request->status === 'processing')
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full flex items-center gap-1 w-fit">
+                                        <i class="fas fa-spinner"></i> Processing
+                                    </span>
+                                @elseif($request->status === 'paid')
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1 w-fit">
+                                        <i class="fas fa-money-check-alt"></i> Paid
                                     </span>
                                 @else
                                     <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1 w-fit">

@@ -246,6 +246,36 @@
                         @enderror
                     </div>
 
+                    <!-- Jam Mulai -->
+                    <div>
+                        <label for="start_time" class="block text-sm font-medium text-gray-700 mb-2">
+                            Jam Mulai
+                        </label>
+                        <input type="time" 
+                               name="start_time" 
+                               id="start_time" 
+                               value="{{ old('start_time', isset($clas) && $clas->start_time ? $clas->start_time->format('H:i') : '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('start_time') border-red-500 @enderror">
+                        @error('start_time')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Jam Selesai -->
+                    <div>
+                        <label for="end_time" class="block text-sm font-medium text-gray-700 mb-2">
+                            Jam Selesai
+                        </label>
+                        <input type="time" 
+                               name="end_time" 
+                               id="end_time" 
+                               value="{{ old('end_time', isset($clas) && $clas->end_time ? $clas->end_time->format('H:i') : '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('end_time') border-red-500 @enderror">
+                        @error('end_time')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Deskripsi -->
                     <div class="md:col-span-2">
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
