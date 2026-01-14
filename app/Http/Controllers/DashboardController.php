@@ -287,6 +287,16 @@ class DashboardController extends Controller
             ];
         }
 
+        // Get ongoing classes for Academy division
+        $ongoingClasses = collect();
+        if ($activeDivision === 'academy') {
+            $ongoingClasses = \App\Models\Clas::where('status', 'approved')
+                ->where('start_date', '<=', now())
+                ->where('end_date', '>=', now())
+                ->orderBy('start_date', 'desc')
+                ->get();
+        }
+
         return view('admin.dashboard', compact(
             'totalRevenue',
             'totalProjects',
@@ -314,7 +324,8 @@ class DashboardController extends Controller
             'selectedMonth',
             'selectedYear',
             'activeDivision',
-            'user'
+            'user',
+            'ongoingClasses'
         ));
     }
 
@@ -593,13 +604,38 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Get projects where user is a team member
+        // Get recent projects (5 latest)
         $projects = Project::whereHas('teams.members', function($q) use ($user) {
             $q->where('user_id', $user->id);
         })->with(['client', 'teams.members'])
             ->latest()
             ->limit(5)
             ->get();
+
+        // Get ALL projects history for the employee
+        $allProjects = Project::whereHas('teams.members', function($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->with(['client', 'teams.members'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($project) use ($user) {
+                // Get role and hourly rate from team_members pivot
+                $teamMember = \App\Models\TeamMember::where('user_id', $user->id)
+                    ->whereHas('team', function($q) use ($project) {
+                        $q->where('project_id', $project->id);
+                    })
+                    ->first();
+                
+                $project->employee_role = $teamMember ? $teamMember->role : 'Member';
+                $project->hourly_rate = $teamMember ? $teamMember->hourly_rate : 0;
+                
+                // Get total hours worked on this project
+                $project->total_hours = \App\Models\TimeTracking::where('user_id', $user->id)
+                    ->where('project_id', $project->id)
+                    ->sum('hours');
+                
+                return $project;
+            });
 
         // Get assigned tasks
         $tasks = $user->tasks()
@@ -614,6 +650,74 @@ class DashboardController extends Controller
             ->whereMonth('work_date', now()->month)
             ->sum('hours');
 
+        // Payment Requests Summary
+        $paymentRequests = \App\Models\PaymentRequest::where('user_id', $user->id);
+        
+        $paymentStats = [
+            // Pendapatan RIIL yang sudah cair (status = paid)
+            'total_this_month' => (clone $paymentRequests)
+                ->where('status', 'paid')
+                ->whereMonth('paid_at', now()->month)
+                ->whereYear('paid_at', now()->year)
+                ->sum('approved_amount'),
+            
+            'total_this_year' => (clone $paymentRequests)
+                ->where('status', 'paid')
+                ->whereYear('paid_at', now()->year)
+                ->sum('approved_amount'),
+            
+            'total_all_time' => (clone $paymentRequests)
+                ->where('status', 'paid')
+                ->sum('approved_amount'),
+            
+            // Pending approval dari admin
+            'pending_amount' => (clone $paymentRequests)
+                ->where('status', 'pending')
+                ->sum('requested_amount'),
+            
+            'pending_count' => (clone $paymentRequests)
+                ->where('status', 'pending')
+                ->count(),
+            
+            // Approved tapi belum dibayar (awaiting payment from finance)
+            'approved_unpaid_amount' => (clone $paymentRequests)
+                ->whereIn('status', ['approved', 'processing'])
+                ->sum('approved_amount'),
+            
+            'approved_unpaid_count' => (clone $paymentRequests)
+                ->whereIn('status', ['approved', 'processing'])
+                ->count(),
+        ];
+
+        // Calculate average per month (only months with PAID payments)
+        $paidPayments = (clone $paymentRequests)->where('status', 'paid')->get();
+        $uniqueMonths = $paidPayments->filter(function($payment) {
+            return $payment->paid_at !== null;
+        })->map(function($payment) {
+            return $payment->paid_at->format('Y-m');
+        })->unique()->count();
+        
+        $monthCount = $uniqueMonths > 0 ? $uniqueMonths : 1;
+        $paymentStats['average_per_month'] = $paymentStats['total_all_time'] / $monthCount;
+
+        // Get monthly payment data for chart (last 12 months) - PAID only
+        $monthlyPayments = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $month = $date->format('M Y');
+            
+            $total = (clone $paymentRequests)
+                ->where('status', 'paid')
+                ->whereMonth('paid_at', $date->month)
+                ->whereYear('paid_at', $date->year)
+                ->sum('approved_amount');
+            
+            $monthlyPayments[] = [
+                'month' => $month,
+                'total' => $total,
+            ];
+        }
+
         $stats = [
             'active_projects' => Project::whereHas('teams.members', function($q) use ($user) {
                 $q->where('user_id', $user->id);
@@ -622,7 +726,15 @@ class DashboardController extends Controller
             'hours_this_month' => $timeThisMonth,
         ];
 
-        return view('employee.dashboard', compact('projects', 'tasks', 'stats'));
+        // Get ongoing classes (kelas berjalan)
+        $ongoingClasses = \App\Models\Clas::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        return view('employee.dashboard', compact('projects', 'tasks', 'stats', 'allProjects', 'paymentStats', 'monthlyPayments', 'ongoingClasses'));
     }
 
     /**

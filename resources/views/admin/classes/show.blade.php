@@ -113,6 +113,18 @@
                             <p class="text-sm text-gray-600">Tanggal Selesai</p>
                             <p class="font-medium text-gray-900">{{ $clas->end_date->format('d M Y') }}</p>
                         </div>
+                        @if($clas->start_time)
+                        <div>
+                            <p class="text-sm text-gray-600">Jam Mulai</p>
+                            <p class="font-medium text-gray-900">{{ $clas->start_time->format('H:i') }}</p>
+                        </div>
+                        @endif
+                        @if($clas->end_time)
+                        <div>
+                            <p class="text-sm text-gray-600">Jam Selesai</p>
+                            <p class="font-medium text-gray-900">{{ $clas->end_time->format('H:i') }}</p>
+                        </div>
+                        @endif
                         <div>
                             <p class="text-sm text-gray-600">Jumlah Pertemuan</p>
                             <p class="font-medium text-gray-900">{{ $clas->meet }}x</p>

@@ -28,13 +28,13 @@ class ProjectController extends Controller
         } else {
             // Apply division filter for admin
             if ($user->isAgencyAdmin()) {
-                // Agency admin: only see projects with agency services
-                $query->whereHas('order.items.service.category', function($q) {
+                // Agency admin: only see projects from agency orders
+                $query->whereHas('order', function($q) {
                     $q->where('division', 'agency');
                 });
             } elseif ($user->isAcademyAdmin()) {
-                // Academy admin: only see projects with academy services
-                $query->whereHas('order.items.service.category', function($q) {
+                // Academy admin: only see projects from academy orders
+                $query->whereHas('order', function($q) {
                     $q->where('division', 'academy');
                 });
             }
@@ -42,7 +42,7 @@ class ProjectController extends Controller
             
             // Filter by division for super admin (dropdown filter)
             if ($user->isSuperAdmin() && $request->has('division') && $request->division !== 'all') {
-                $query->whereHas('order.items.service.category', function($q) use ($request) {
+                $query->whereHas('order', function($q) use ($request) {
                     $q->where('division', $request->division);
                 });
             }
@@ -90,7 +90,7 @@ class ProjectController extends Controller
             $query->latest();
         }
 
-        $projects = $query->paginate(12);
+        $projects = $query->paginate(12)->appends($request->query());
 
         return view('admin.projects.index', compact('projects', 'user', 'selectedYear', 'availableYears'));
     }
@@ -217,6 +217,7 @@ class ProjectController extends Controller
             'tasks.assignee',
             'milestones',
             'expenses',
+            'chats.user',
         ]);
 
         // Calculate project statistics
@@ -264,7 +265,16 @@ class ProjectController extends Controller
         // Get available employees for team assignment
         $availableEmployees = \App\Models\User::where('role', 'employee')->get();
 
-        return view('admin.projects.show', compact('project', 'stats', 'deadline', 'picMember', 'activities', 'availableEmployees'));
+        // Get project chats (latest 50 messages)
+        $chats = $project->chats()
+            ->with('user')
+            ->latest()
+            ->take(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        return view('admin.projects.show', compact('project', 'stats', 'deadline', 'picMember', 'activities', 'availableEmployees', 'chats'));
     }
 
     /**
@@ -552,5 +562,56 @@ class ProjectController extends Controller
         );
 
         return back()->with('success', 'Expense berhasil dihapus!');
+    }
+
+    /**
+     * Store a new chat message for admin.
+     */
+    public function storeChat(Request $request, Project $project)
+    {
+        // Admin can always chat
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $chat = \App\Models\ProjectChat::create([
+            'project_id' => $project->id,
+            'user_id' => auth()->id(),
+            'message' => $request->message,
+        ]);
+
+        $chat->load('user');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json($chat);
+        }
+
+        return redirect()->route('admin.projects.show', $project)
+            ->with('success', 'Pesan terkirim');
+    }
+
+    /**
+     * Get chat messages via AJAX for admin.
+     */
+    public function getChats(Project $project)
+    {
+        // Admin can always view chats
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $chats = $project->chats()
+            ->with('user')
+            ->latest()
+            ->take(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        return response()->json($chats);
     }
 }

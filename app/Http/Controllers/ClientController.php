@@ -84,7 +84,7 @@ class ClientController extends Controller
             }
         }
 
-        $clients = $query->latest()->paginate(15);
+        $clients = $query->latest()->paginate(15)->appends($request->query());
 
         // Calculate stats for each client
         foreach ($clients as $client) {

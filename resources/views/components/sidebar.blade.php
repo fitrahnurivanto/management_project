@@ -49,6 +49,12 @@
                     <span class="ml-2.5">Kelas</span>
                 </a>
             </li>
+             <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.trainer.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.index') || request()->routeIs('admin.classes.create') || request()->routeIs('admin.classes.edit') || request()->routeIs('admin.classes.show') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
+                    <i class="fas fa-chalkboard-teacher w-6 text-lg"></i>
+                    <span class="ml-2.5">Trainer</span>
+                </a>
+            </li>
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.classes.showclas') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-green-50 hover:text-green-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.showclas') ? 'bg-green-50 text-green-600 font-semibold' : '' }}">
                     <i class="fas fa-play-circle w-6 text-lg"></i>
@@ -93,13 +99,12 @@
                     @php
                         $pendingPaymentsQuery = \App\Models\PaymentRequest::where('status', 'pending');
                         if (auth()->user()->isAgencyAdmin()) {
-                            $pendingPaymentsQuery->whereHas('project.order.items.service.category', function($q) {
-                                $q->where('division', 'agency');
-                            });
+                            $pendingPaymentsQuery->whereNotNull('project_id')
+                                                ->whereHas('project.order', function($q) {
+                                                    $q->where('division', 'agency');
+                                                });
                         } elseif (auth()->user()->isAcademyAdmin()) {
-                            $pendingPaymentsQuery->whereHas('project.order.items.service.category', function($q) {
-                                $q->where('division', 'academy');
-                            });
+                            $pendingPaymentsQuery->whereNotNull('class_id');
                         }
                         $pendingPayments = $pendingPaymentsQuery->count();
                     @endphp
@@ -108,8 +113,42 @@
                     @endif
                 </a>
             </li>
-        @else
+        @elseif(auth()->user()->role === 'employee')
             <!-- Employee Menu -->
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('employee.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('employee.dashboard') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-home w-6 text-lg"></i>
+                    <span class="ml-2.5">Dashboard</span>
+                </a>
+            </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('employee.projects.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('employee.projects.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-tasks w-6 text-lg"></i>
+                    <span class="ml-2.5">My Projects</span>
+                </a>
+            </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('employee.payment-requests.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('employee.payment-requests.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-money-bill-wave w-6 text-lg"></i>
+                    <span class="ml-2.5">Payment Requests</span>
+                </a>
+            </li>
+        @elseif(auth()->user()->role === 'client')
+            <!-- Client Menu -->
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('client.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('client.dashboard') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-home w-6 text-lg"></i>
+                    <span class="ml-2.5">Dashboard</span>
+                </a>
+            </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('client.projects.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('client.projects.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-project-diagram w-6 text-lg"></i>
+                    <span class="ml-2.5">My Projects</span>
+                </a>
+            </li>
+        @else
+            <!-- Employee Menu (Legacy) -->
             <li class="mx-2.5 my-1">
                 <a href="{{ route('employee.dashboard') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('employee.dashboard') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-home w-6 text-lg"></i>

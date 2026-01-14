@@ -11,14 +11,19 @@ class ProjectChatController extends Controller
 {
     public function index(Project $project)
     {
-        // Verify user is member of this project
-        $isMember = $project->teams()
-            ->whereHas('members', function($q) {
-                $q->where('user_id', auth()->id());
+        // Allow: Team members, Project owner (client), and Admin
+        $user = auth()->user();
+        
+        $isTeamMember = $project->teams()
+            ->whereHas('members', function($q) use ($user) {
+                $q->where('user_id', $user->id);
             })
             ->exists();
+            
+        $isProjectOwner = $project->order->client_id === $user->id;
+        $isAdmin = $user->isAdmin();
 
-        if (!$isMember) {
+        if (!$isTeamMember && !$isProjectOwner && !$isAdmin) {
             abort(403, 'Anda tidak memiliki akses ke project ini');
         }
 
@@ -39,14 +44,19 @@ class ProjectChatController extends Controller
 
     public function store(Request $request, Project $project)
     {
-        // Verify user is member of this project
-        $isMember = $project->teams()
-            ->whereHas('members', function($q) {
-                $q->where('user_id', auth()->id());
+        // Allow: Team members, Project owner (client), and Admin
+        $user = auth()->user();
+        
+        $isTeamMember = $project->teams()
+            ->whereHas('members', function($q) use ($user) {
+                $q->where('user_id', $user->id);
             })
             ->exists();
+            
+        $isProjectOwner = $project->order->client_id === $user->id;
+        $isAdmin = $user->isAdmin();
 
-        if (!$isMember) {
+        if (!$isTeamMember && !$isProjectOwner && !$isAdmin) {
             abort(403);
         }
 

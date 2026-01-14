@@ -29,7 +29,7 @@ class KaryawanController extends Controller
             });
         }
 
-        $karyawan = $query->latest()->paginate(12);
+        $karyawan = $query->latest()->paginate(12)->appends($request->query());
 
         // Count team memberships and active projects
         foreach ($karyawan as $employee) {

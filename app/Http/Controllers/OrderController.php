@@ -109,7 +109,7 @@ class OrderController extends Controller
         END")
         ->orderBy('order_date', 'desc');
 
-        $orders = $query->paginate(20);
+        $orders = $query->paginate(20)->appends($request->query());
         
         // Count pending review orders for badge
         $pendingQuery = Order::where('payment_status', 'pending_review');
