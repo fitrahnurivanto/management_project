@@ -287,14 +287,45 @@ class DashboardController extends Controller
             ];
         }
 
-        // Get ongoing classes for Academy division
+        // Get ongoing classes and revenue data for Academy division
         $ongoingClasses = collect();
+        $classRevenue = 0;
+        $totalClassIncome = 0;
+        $monthlyClassRevenue = [];
         if ($activeDivision === 'academy') {
+            // Get ongoing classes
             $ongoingClasses = \App\Models\Clas::where('status', 'approved')
                 ->where('start_date', '<=', now())
                 ->where('end_date', '>=', now())
                 ->orderBy('start_date', 'desc')
                 ->get();
+            
+            // Build class query with same filters
+            $classQuery = \App\Models\Clas::where('status', 'approved');
+            
+            // Apply period filter
+            if ($period !== 'all') {
+                $dateFilter = $this->getDateFilter($period);
+                $classQuery->whereBetween('start_date', $dateFilter);
+            }
+            
+            // Apply year filter
+            if ($year !== 'all') {
+                $classQuery->whereYear('start_date', $year);
+            }
+            
+            // Calculate total revenue from classes
+            $classRevenue = $classQuery->sum('income');
+            $totalClassIncome = \App\Models\Clas::where('status', 'approved')->sum('income');
+            
+            // Monthly class revenue for chart
+            for ($m = 1; $m <= 12; $m++) {
+                $monthRevenue = \App\Models\Clas::where('status', 'approved')
+                    ->whereYear('start_date', $selectedYear)
+                    ->whereMonth('start_date', $m)
+                    ->sum('income');
+                $monthlyClassRevenue[] = $monthRevenue;
+            }
         }
 
         return view('admin.dashboard', compact(
@@ -325,7 +356,10 @@ class DashboardController extends Controller
             'selectedYear',
             'activeDivision',
             'user',
-            'ongoingClasses'
+            'ongoingClasses',
+            'classRevenue',
+            'totalClassIncome',
+            'monthlyClassRevenue'
         ));
     }
 

@@ -411,4 +411,150 @@ class OrderController extends Controller
             return back()->with('error', 'Gagal update pembayaran: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Show PKS form for editing before printing
+     */
+    public function showPksForm(Order $order)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        // Only allow PKS for confirmed orders
+        if ($order->payment_status !== 'paid') {
+            return back()->with('error', 'PKS hanya bisa dicetak untuk order yang sudah terkonfirmasi (paid).');
+        }
+
+        $order->load(['client', 'items.service']);
+
+        // Generate PKS number if not exists
+        if (!$order->pks_number) {
+            $order->pks_number = $this->generatePksNumber($order);
+        }
+
+        // Set default duration if not exists
+        if (!$order->duration) {
+            $order->duration = '1 (satu) bulan';
+        }
+
+        // Set PKS date to order date
+        if (!$order->pks_date) {
+            $order->pks_date = $order->order_date ?? $order->created_at;
+        }
+
+        // Default position for client if not exists
+        $clientPosition = $order->client->position ?? 'Direktur';
+
+        return view('admin.orders.pks-form', compact('order', 'clientPosition'));
+    }
+
+    /**
+     * Generate PDF from PKS data
+     */
+    public function generatePks(Request $request, Order $order)
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'pks_number' => 'required|string',
+            'pks_date' => 'required|date',
+            'duration' => 'required|string',
+            'client_name' => 'required|string',
+            'client_position' => 'required|string',
+            'client_address' => 'required|string',
+            'service_description' => 'required|string',
+            'payment_amount' => 'required|numeric',
+            'client_logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+        ]);
+
+        // Update order with PKS data
+        $order->update([
+            'pks_number' => $validated['pks_number'],
+            'pks_date' => $validated['pks_date'],
+            'duration' => $validated['duration'],
+        ]);
+
+        // Update client position if provided
+        if ($request->client_position) {
+            $order->client->update(['position' => $request->client_position]);
+        }
+
+        // Handle client logo upload
+        if ($request->hasFile('client_logo')) {
+            // Delete old logo if exists
+            if ($order->client->logo) {
+                \Storage::delete('public/' . $order->client->logo);
+            }
+
+            // Store new logo
+            $path = $request->file('client_logo')->store('logos/clients', 'public');
+            $order->client->update(['logo' => $path]);
+        }
+
+        // Get company settings
+        $companyLogo = \App\Models\Setting::get('company_logo');
+        $companyName = \App\Models\Setting::get('company_name', 'Creativemu');
+        $companyDirector = \App\Models\Setting::get('company_director', 'Agus Susanto');
+        $companyAddress = \App\Models\Setting::get('company_address', 'Jl. Gn. Bulu No.89, RT.34, Argorejo, Kec. Sedayu, Kabupaten Bantul, Yogyakarta 55752');
+
+        // Prepare data for PDF
+        $data = [
+            'order' => $order,
+            'pks_number' => $validated['pks_number'],
+            'pks_date' => \Carbon\Carbon::parse($validated['pks_date']),
+            'duration' => $validated['duration'],
+            'client_name' => $validated['client_name'],
+            'client_position' => $validated['client_position'],
+            'client_address' => $validated['client_address'],
+            'service_description' => $validated['service_description'],
+            'payment_amount' => $validated['payment_amount'],
+            // Creativemu data (Pihak Pertama)
+            'company_name' => $companyName,
+            'company_director' => $companyDirector,
+            'company_address' => $companyAddress,
+            'company_logo' => $companyLogo ? public_path('storage/' . $companyLogo) : null,
+            'client_logo' => $order->client->logo ? public_path('storage/' . $order->client->logo) : null,
+            'signing_location' => 'Yogyakarta',
+        ];
+
+        $pdf = \PDF::loadView('admin.orders.pks-pdf', $data);
+        
+        $filename = 'PKS-' . $order->order_number . '-' . date('Ymd') . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Generate unique PKS number
+     */
+    private function generatePksNumber($order)
+    {
+        // Get last PKS number
+        $lastOrder = Order::whereNotNull('pks_number')
+            ->whereYear('created_at', date('Y'))
+            ->orderBy('pks_number', 'desc')
+            ->first();
+
+        if ($lastOrder && $lastOrder->pks_number) {
+            // Extract number from format: 089/PKS/CMU/I/2026
+            preg_match('/(\d+)\/PKS/', $lastOrder->pks_number, $matches);
+            $lastNumber = isset($matches[1]) ? intval($matches[1]) : 0;
+            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        } else {
+            $newNumber = '001';
+        }
+
+        // Get month in Roman numerals
+        $orderDate = $order->order_date ?? $order->created_at;
+        $month = \Carbon\Carbon::parse($orderDate)->month;
+        $romanMonths = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+        $romanMonth = $romanMonths[$month - 1];
+
+        $year = \Carbon\Carbon::parse($orderDate)->year;
+
+        return "{$newNumber}/PKS/CMU/{$romanMonth}/{$year}";
+    }
 }

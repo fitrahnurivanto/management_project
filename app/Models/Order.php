@@ -20,6 +20,8 @@ class Order extends Model
         'order_number',
         'order_date',
         'pks_number',
+        'pks_date',
+        'duration',
         'total_amount',
         'paid_amount',
         'payment_status',

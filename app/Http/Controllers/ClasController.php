@@ -53,7 +53,18 @@ class ClasController extends Controller
             abort(403, 'Unauthorized access.');
         }
         
-        return view('admin.classes.create');
+        // Get all trainers from trainers table
+        $trainers = \App\Models\Trainer::where('status', 'active')
+            ->orderBy('name')
+            ->get();
+        
+        // Get trainer IDs yang sudah digunakan di kelas aktif
+        $usedTrainerIds = Clas::whereIn('status', ['pending', 'approved'])
+            ->whereNotNull('trainer_id')
+            ->pluck('trainer_id')
+            ->toArray();
+        
+        return view('admin.classes.create', compact('trainers', 'usedTrainerIds'));
     }
 
     public function store(Request $request)
@@ -67,6 +78,21 @@ class ClasController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'instansi' => 'nullable|string|max:255',
+            'trainer_id' => [
+                'nullable',
+                'exists:trainers,id',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $exists = Clas::where('trainer_id', $value)
+                            ->whereIn('status', ['pending', 'approved'])
+                            ->exists();
+                        
+                        if ($exists) {
+                            $fail('Trainer ini sudah digunakan di kelas lain yang masih aktif.');
+                        }
+                    }
+                },
+            ],
             'price' => 'required|numeric|min:0',
             'amount' => 'required|integer|min:1',
             'cost' => 'required|numeric|min:0',
@@ -113,7 +139,19 @@ class ClasController extends Controller
             abort(403, 'Unauthorized access.');
         }
         
-        return view('admin.classes.edit', compact('clas'));
+        // Get all trainers from trainers table
+        $trainers = \App\Models\Trainer::where('status', 'active')
+            ->orderBy('name')
+            ->get();
+        
+        // Get trainer IDs yang sudah digunakan di kelas aktif (kecuali kelas ini)
+        $usedTrainerIds = Clas::whereIn('status', ['pending', 'approved'])
+            ->where('id', '!=', $clas->id)
+            ->whereNotNull('trainer_id')
+            ->pluck('trainer_id')
+            ->toArray();
+        
+        return view('admin.classes.edit', compact('clas', 'trainers', 'usedTrainerIds'));
     }
 
     public function update(Request $request, Clas $clas)
@@ -127,6 +165,22 @@ class ClasController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'instansi' => 'nullable|string|max:255',
+            'trainer_id' => [
+                'nullable',
+                'exists:trainers,id',
+                function ($attribute, $value, $fail) use ($clas) {
+                    if ($value) {
+                        $exists = Clas::where('trainer_id', $value)
+                            ->where('id', '!=', $clas->id) // Kecuali kelas yang sedang diedit
+                            ->whereIn('status', ['pending', 'approved'])
+                            ->exists();
+                        
+                        if ($exists) {
+                            $fail('Trainer ini sudah digunakan di kelas lain yang masih aktif.');
+                        }
+                    }
+                },
+            ],
             'price' => 'required|numeric|min:0',
             'amount' => 'required|integer|min:1',
             'cost' => 'required|numeric|min:0',

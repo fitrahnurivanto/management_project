@@ -57,10 +57,34 @@
                         @enderror
                     </div>
 
+                    <!-- Pilih Trainer dari Database -->
+                    {{-- <div class="md:col-span-2">
+                        <label for="trainer_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Pilih Trainer Utama
+                        </label>
+                        <select name="trainer_id" 
+                                id="trainer_id" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('trainer_id') border-red-500 @enderror">
+                            <option value="">-- Pilih Trainer (Opsional) --</option>
+                            @foreach($trainers as $trainer)
+                                <option value="{{ $trainer->id }}" 
+                                        {{ old('trainer_id', $clas->trainer_id) == $trainer->id ? 'selected' : '' }}
+                                        {{ in_array($trainer->id, $usedTrainerIds) ? 'disabled' : '' }}>
+                                    {{ $trainer->name }}{{ $trainer->phone ? ' - ' . $trainer->phone : '' }}
+                                    {{ in_array($trainer->id, $usedTrainerIds) ? ' (Sudah digunakan)' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Pilih trainer utama dari database trainer</p>
+                        @error('trainer_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div> --}}
+
                     <!-- Trainer -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Nama Trainer <span class="text-red-500">*</span>
+                            Nama Trainer Tambahan <span class="text-red-500">*</span>
                         </label>
                         <div id="trainers-container" class="space-y-3">
                             @php

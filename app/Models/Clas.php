@@ -11,6 +11,7 @@ class Clas extends Model
 
     protected $fillable = [
         'user_id',
+        'trainer_id',
         'name',
         'instansi',
         'slug',
@@ -43,5 +44,13 @@ class Clas extends Model
         'end_time' => 'datetime:H:i',
         'trainer' => 'array',
     ];
+
+    /**
+     * Get the trainer for the class
+     */
+    public function trainer(): BelongsTo
+    {
+        return $this->belongsTo(Trainer::class, 'trainer_id');
+    }
 }
 
