@@ -3,8 +3,7 @@
 @section('page-title', 'Ajukan Payment Request')
 
 @section('content')
-<div class="p-8">
-    <div class="mb-6">
+<div class="mb-6">
         <a href="{{ route('employee.payment-requests.index') }}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition">
             <i class="fas fa-arrow-left"></i> Kembali
         </a>

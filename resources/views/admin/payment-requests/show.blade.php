@@ -3,9 +3,8 @@
 @section('page-title', 'Review Payment Request')
 
 @section('content')
-<div class="p-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+<!-- Header -->
+<div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.payment-requests.index') }}" class="text-gray-600 hover:text-gray-900 transition">
                 <i class="fas fa-arrow-left text-xl"></i>
@@ -419,5 +418,4 @@ function submitForm(action) {
             </div>
         </div>
     </div>
-</div>
 @endsection

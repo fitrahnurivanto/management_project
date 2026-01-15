@@ -111,6 +111,123 @@
 </div>
 </div>
 <!-- Stats Cards -->
+@if($activeDivision === 'academy')
+<!-- Academy Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <!-- Total Class Income -->
+    <div class="bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Total Pendapatan Kelas</p>
+                    <h4 class="text-2xl font-bold text-green-600">Rp {{ number_format($totalClassIncome, 0, ',', '.') }}</h4>
+                    <p class="text-gray-400 text-xs mt-1">Semua kelas approved</p>
+                </div>
+                <div class="bg-green-100 p-3 rounded-xl">
+                    <i class="fas fa-graduation-cap text-3xl text-green-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtered Class Revenue -->
+    <div class="bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Pendapatan (Filtered)</p>
+                    <h4 class="text-2xl font-bold text-gray-800">Rp {{ number_format($classRevenue, 0, ',', '.') }}</h4>
+                    <p class="text-gray-400 text-xs mt-1">Sesuai filter periode</p>
+                </div>
+                <div class="bg-blue-100 p-3 rounded-xl">
+                    <i class="fas fa-filter text-3xl text-blue-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Classes -->
+    <div class="bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Kelas Berjalan</p>
+                    <h4 class="text-2xl font-bold text-gray-800">{{ $ongoingClasses->count() }}</h4>
+                    <p class="text-gray-400 text-xs mt-1">Sedang berlangsung</p>
+                </div>
+                <div class="bg-purple-100 p-3 rounded-xl">
+                    <i class="fas fa-chalkboard-teacher text-3xl text-purple-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Income per Class -->
+    <div class="bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Rata-rata per Kelas</p>
+                    @php
+                        $totalClasses = \App\Models\Clas::where('status', 'approved')->count();
+                        $avgIncome = $totalClasses > 0 ? $totalClassIncome / $totalClasses : 0;
+                    @endphp
+                    <h4 class="text-2xl font-bold text-gray-800">Rp {{ number_format($avgIncome, 0, ',', '.') }}</h4>
+                    <p class="text-gray-400 text-xs mt-1">{{ $totalClasses }} kelas total</p>
+                </div>
+                <div class="bg-indigo-100 p-3 rounded-xl">
+                    <i class="fas fa-chart-pie text-3xl text-indigo-500"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Class Revenue Chart -->
+<div class="bg-white rounded-2xl shadow-sm mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h5 class="text-lg font-semibold text-gray-800">
+            <i class="fas fa-chart-line mr-2 text-green-600"></i>Pendapatan Kelas per Bulan ({{ $selectedYear }})
+        </h5>
+    </div>
+    <div class="p-6">
+        <div class="chart-container">
+            <canvas id="classRevenueChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Ongoing Classes List -->
+@if($ongoingClasses->count() > 0)
+<div class="bg-white rounded-2xl shadow-sm mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <h5 class="text-lg font-semibold text-gray-800">
+            <i class="fas fa-play-circle mr-2 text-green-600"></i>Kelas Sedang Berjalan
+        </h5>
+    </div>
+    <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($ongoingClasses as $class)
+            <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+                <h6 class="font-semibold text-gray-900 mb-2">{{ $class->name }}</h6>
+                <div class="space-y-1 text-sm">
+                    <p class="text-gray-600"><i class="fas fa-building text-gray-400 w-4"></i> {{ $class->instansi ?? '-' }}</p>
+                    <p class="text-gray-600"><i class="fas fa-users text-gray-400 w-4"></i> {{ $class->amount }} peserta</p>
+                    <p class="text-green-600 font-semibold"><i class="fas fa-money-bill text-gray-400 w-4"></i> Rp {{ number_format($class->income, 0, ',', '.') }}</p>
+                    <p class="text-gray-500 text-xs">
+                        <i class="fas fa-calendar text-gray-400 w-4"></i> 
+                        {{ $class->start_date->format('d/m/Y') }} - {{ $class->end_date->format('d/m/Y') }}
+                    </p>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+
+@else
+<!-- Agency Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
     <!-- Total Revenue Card -->
     <div class="bg-white rounded-2xl shadow-sm hover:-translate-y-1 transition-transform duration-300">
@@ -201,7 +318,7 @@
     </div>
 </div>
 
-<!-- Projects Stats -->
+<!-- Projects Stats (Agency Only) -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="p-6 text-center">
@@ -227,8 +344,10 @@
         </div>
     </div>
 </div>
+@endif
 
-<!-- Revenue & Outstanding Charts Row -->
+<!-- Revenue & Outstanding Charts Row (Agency Only) -->
+@if($activeDivision === 'agency')
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <!-- Monthly Revenue Trend (Bar Chart) -->
     <div class="bg-white rounded-2xl shadow-sm">
@@ -254,8 +373,10 @@
         </div>
     </div>
 </div>
+@endif
 
-<!-- Category, Projects & Comparison Row -->
+<!-- Category, Projects & Comparison Row (Agency Only) -->
+@if($activeDivision === 'agency')
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
     <!-- Revenue by Service (Doughnut Chart) -->
     <div class="bg-white rounded-2xl shadow-sm">
@@ -374,6 +495,7 @@
         </div>
     </div>
 </div>
+@endif
 
 <!-- Ongoing Classes (Kelas Berjalan) - Only for Academy -->
 @if($activeDivision === 'academy')
@@ -1196,6 +1318,80 @@
             calendar.refetchEvents();
         };
     }
+
+    // ========================================
+    // ACADEMY CLASS REVENUE CHART
+    // ========================================
+    @if($activeDivision === 'academy')
+    const classRevenueCtx = document.getElementById('classRevenueChart');
+    if (classRevenueCtx) {
+        const monthlyClassRevenue = {!! json_encode($monthlyClassRevenue) !!};
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        
+        new Chart(classRevenueCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Pendapatan Kelas',
+                    data: monthlyClassRevenue,
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Rp ' + context.parsed.y.toLocaleString('id-ID');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + (value / 1000000).toFixed(1) + 'jt';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+    @endif
 </script>
 
 <!-- FullCalendar JS -->

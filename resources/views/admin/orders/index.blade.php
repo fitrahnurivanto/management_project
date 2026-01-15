@@ -307,6 +307,13 @@
                                 <i class="fab fa-whatsapp mr-1"></i> Chat WA
                             </a>
                             
+                            @if($order->payment_status == 'paid')
+                            <!-- Cetak PKS Button -->
+                            <a href="{{ route('admin.orders.pks.form', $order) }}" class="text-center text-indigo-600 hover:text-indigo-800 font-medium px-3 py-1 border border-indigo-600 rounded hover:bg-indigo-50">
+                                <i class="fas fa-file-contract mr-1"></i> Cetak PKS
+                            </a>
+                            @endif
+                            
                             @if($order->payment_type === 'installment' && $order->remaining_amount > 0)
                             <button onclick="showInstallmentPayment({{ $order->id }})" class="text-center text-blue-600 hover:text-blue-800 font-medium px-3 py-1 border border-blue-600 rounded hover:bg-blue-50">
                                 <i class="fas fa-wallet mr-1"></i> Bayar Pelunasan

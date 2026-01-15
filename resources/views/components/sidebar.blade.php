@@ -50,8 +50,8 @@
                 </a>
             </li>
              <li class="mx-2.5 my-1">
-                <a href="{{ route('admin.trainer.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.index') || request()->routeIs('admin.classes.create') || request()->routeIs('admin.classes.edit') || request()->routeIs('admin.classes.show') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
-                    <i class="fas fa-chalkboard-teacher w-6 text-lg"></i>
+                <a href="{{ route('admin.trainer.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.trainer.*') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
+                    <i class="fas fa-user-graduate w-6 text-lg"></i>
                     <span class="ml-2.5">Trainer</span>
                 </a>
             </li>
@@ -113,6 +113,16 @@
                     @endif
                 </a>
             </li>
+
+            <!-- Settings - Super Admin Only -->
+            @if(auth()->user()->isSuperAdmin())
+            <li class="mx-2.5 my-1 pt-2 border-t border-gray-200">
+                <a href="{{ route('admin.settings.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.settings.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-cog w-6 text-lg"></i>
+                    <span class="ml-2.5">Pengaturan</span>
+                </a>
+            </li>
+            @endif
         @elseif(auth()->user()->role === 'employee')
             <!-- Employee Menu -->
             <li class="mx-2.5 my-1">

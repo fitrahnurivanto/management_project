@@ -3,9 +3,8 @@
 @section('page-title', 'Payment Requests')
 
 @section('content')
-<div class="p-8">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
+<!-- Header -->
+<div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Permintaan Pembayaran</h1>
             <p class="text-gray-600">Kelola payment request dari karyawan</p>
@@ -83,10 +82,6 @@
                 </div>
                 <div class="bg-red-200 p-3 rounded-lg">
                     <i class="fas fa-times-circle text-red-700 text-lg"></i>
-                </div>
-            </div>
-        </div>
-    </div>
                 </div>
             </div>
         </div>
@@ -218,5 +213,4 @@
         </div>
         @endif
     </div>
-</div>
 @endsection

@@ -21,6 +21,9 @@ class Client extends Model
         'npwp',
         'contact_person',
         'contact_phone',
+        'position',
+        'logo',
+        'referral_source',
     ];
 
     /**

@@ -13,6 +13,7 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ClasController;
 use App\Http\Controllers\TrainerController;
+use App\Http\Controllers\SettingsController;
 
 // Public routes - Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -73,6 +74,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/orders/{order}/reject', [OrderController::class, 'rejectOrder'])->name('orders.reject');
         Route::get('/orders/{order}/installment-info', [OrderController::class, 'getInstallmentInfo'])->name('orders.installment-info');
         Route::post('/orders/{order}/update-installment', [OrderController::class, 'updateInstallment'])->name('orders.update-installment');
+        
+        // PKS Management
+        Route::get('/orders/{order}/pks', [OrderController::class, 'showPksForm'])->name('orders.pks.form');
+        Route::post('/orders/{order}/pks/generate', [OrderController::class, 'generatePks'])->name('orders.pks.generate');
         
         // Clients management
         Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
@@ -143,6 +148,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/trainer/{trainer}/edit',[TrainerController::class, 'edit'])->name('trainer.edit');
         Route::put('/trainer/{trainer}',[TrainerController::class, 'update'])->name('trainer.update');
         Route::delete('/trainer/{trainer}',[TrainerController::class, 'destroy'])->name('trainer.destroy');
+
+        // Settings
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 
         // Payment Requests (Admin)
         Route::resource('payment-requests', \App\Http\Controllers\Admin\PaymentRequestController::class)

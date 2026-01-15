@@ -100,7 +100,9 @@
             </div>
         </div>
         
-        @yield('content')
+        <div class="p-8">
+            @yield('content')
+        </div>
     </div>
     
     @stack('scripts')
