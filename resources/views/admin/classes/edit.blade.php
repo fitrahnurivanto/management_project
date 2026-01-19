@@ -24,6 +24,28 @@
                 @method('PUT')
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Kategori -->
+                    <div class="md:col-span-2">
+                        <label for="kategori_id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Kategori <span class="text-red-500">*</span>
+                        </label>
+                        <select name="kategori_id" 
+                                id="kategori_id" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf] @error('kategori_id') border-red-500 @enderror"
+                                required>
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach($kategoris as $kategori)
+                                <option value="{{ $kategori->id }}" 
+                                        {{ old('kategori_id', $clas->kategori_id) == $kategori->id ? 'selected' : '' }}>
+                                    {{ $kategori->nama_kategori }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('kategori_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Nama Kelas -->
                     <div class="md:col-span-2">
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
@@ -41,10 +63,10 @@
                         @enderror
                     </div>
 
-                    <!-- Instansi -->
-                    <div class="md:col-span-2">
+                    <!-- Instansi (hanya muncul untuk Corporate Training) -->
+                    <div class="md:col-span-2" id="instansi-wrapper" style="display: none;">
                         <label for="instansi" class="block text-sm font-medium text-gray-700 mb-2">
-                            Instansi
+                            Instansi <span class="text-red-500">*</span>
                         </label>
                         <input type="text" 
                                name="instansi" 
@@ -140,8 +162,8 @@
                         @enderror
                     </div>
 
-                    <!-- Jumlah Siswa -->
-                    <div>
+                    <!-- Jumlah Siswa (tidak muncul untuk Private) -->
+                    <div id="amount-wrapper">
                         <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">
                             Jumlah Siswa <span class="text-red-500">*</span>
                         </label>
@@ -345,6 +367,46 @@
 </div>
 
 <script>
+// Toggle instansi field based on kategori selection
+document.addEventListener('DOMContentLoaded', function() {
+    const kategoriSelect = document.getElementById('kategori_id');
+    const instansiWrapper = document.getElementById('instansi-wrapper');
+    const instansiInput = document.getElementById('instansi');
+    const amountWrapper = document.getElementById('amount-wrapper');
+    const amountInput = document.getElementById('amount');
+    
+    function toggleFields() {
+        const selectedOption = kategoriSelect.options[kategoriSelect.selectedIndex];
+        const kategoriText = selectedOption.text.toLowerCase();
+        
+        // Toggle instansi for Corporate Training
+        if (kategoriText.includes('corporate training')) {
+            instansiWrapper.style.display = 'block';
+            instansiInput.required = true;
+        } else {
+            instansiWrapper.style.display = 'none';
+            instansiInput.required = false;
+            instansiInput.value = '';
+        }
+        
+        // Toggle amount for Private
+        if (kategoriText.includes('private')) {
+            amountWrapper.style.display = 'none';
+            amountInput.required = false;
+            amountInput.value = '1'; // Set default 1 untuk private
+        } else {
+            amountWrapper.style.display = 'block';
+            amountInput.required = true;
+        }
+    }
+    
+    // Check on page load
+    toggleFields();
+    
+    // Listen for changes
+    kategoriSelect.addEventListener('change', toggleFields);
+});
+
 function addTrainer() {
     const container = document.getElementById('trainers-container');
     const trainerItem = document.createElement('div');

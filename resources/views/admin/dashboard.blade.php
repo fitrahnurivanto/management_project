@@ -531,7 +531,6 @@
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Siswa</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Pertemuan</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Metode</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Trainer</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Income</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Progress</th>
                 </tr>
@@ -584,17 +583,6 @@
                                 <i class="fas fa-building mr-1"></i>Offline
                             </span>
                         @endif
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">
-                            @if(is_array($class->trainer))
-                                @foreach($class->trainer as $index => $trainer)
-                                    {{ $trainer }}{{ $index < count($class->trainer) - 1 ? ',' : '' }}
-                                @endforeach
-                            @else
-                                {{ $class->trainer }}
-                            @endif
-                        </div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="font-semibold text-green-600">

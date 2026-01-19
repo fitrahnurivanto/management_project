@@ -2,6 +2,46 @@
     <div class="px-5 py-6 border-b border-gray-200">
         <h4 class="text-xl font-bold text-gray-800"><i class="fas fa-project-diagram mr-2 text-indigo-600"></i>Management</h4>
     </div>
+
+    @php
+        // Get active division from session or determine from user role
+        $activeDivision = session('active_division');
+        
+        // If no session, set default based on user role
+        if (!$activeDivision && auth()->user()->isAdmin()) {
+            if (auth()->user()->isAgencyAdmin()) {
+                $activeDivision = 'agency';
+            } elseif (auth()->user()->isAcademyAdmin()) {
+                $activeDivision = 'academy';
+            } else {
+                // Super admin - default to agency or get from request
+                $activeDivision = request('division', 'agency');
+            }
+        }
+    @endphp
+
+    <!-- Division Switcher for Super Admin -->
+    @if(auth()->user()->isSuperAdmin())
+    <div class="px-5 py-4 border-b border-gray-200 bg-gray-50">
+        <p class="text-xs font-semibold text-gray-500 mb-2">SWITCH DIVISION</p>
+        <div class="grid grid-cols-2 gap-2">
+            <form action="{{ route('division.set') }}" method="POST">
+                @csrf
+                <input type="hidden" name="division" value="agency">
+                <button type="submit" class="w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap {{ $activeDivision === 'agency' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100' }}">
+                    <i class="fas fa-briefcase mr-1"></i>Agency
+                </button>
+            </form>
+            <form action="{{ route('division.set') }}" method="POST">
+                @csrf
+                <input type="hidden" name="division" value="academy">
+                <button type="submit" class="w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap {{ $activeDivision === 'academy' ? 'bg-purple-600 text-white shadow-md' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100' }}">
+                    <i class="fas fa-graduation-cap mr-1"></i>Academy
+                </button>
+            </form>
+        </div>
+    </div>
+    @endif
     
     <ul class="py-5 px-0 list-none">
         @if(auth()->user()->role === 'admin')
@@ -15,6 +55,7 @@
 
             <!-- Menu Agency (Super Admin & Admin Agency) -->
             @if(auth()->user()->isSuperAdmin() || auth()->user()->isAgencyAdmin())
+                @if($activeDivision === 'agency' || auth()->user()->isAgencyAdmin())
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.orders.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.orders.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-shopping-cart w-6 text-lg"></i>
@@ -39,20 +80,28 @@
                     <span class="ml-2.5">Projects</span>
                 </a>
             </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.karyawan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.karyawan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                    <i class="fas fa-user-tie w-6 text-lg"></i>
+                    <span class="ml-2.5">Karyawan</span>
+                </a>
+            </li>
+            <li class="mx-2.5 my-1">
+                <a href="#" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1">
+                    <i class="fas fa-users-cog w-6 text-lg"></i>
+                    <span class="ml-2.5">Teams</span>
+                </a>
+            </li>
+                @endif
             @endif
             
             <!-- Menu Academy (Super Admin & Admin Academy) -->
             @if(auth()->user()->canAccessAcademy())
+                @if($activeDivision === 'academy' || auth()->user()->isAcademyAdmin())
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.classes.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.classes.index') || request()->routeIs('admin.classes.create') || request()->routeIs('admin.classes.edit') || request()->routeIs('admin.classes.show') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
                     <i class="fas fa-chalkboard-teacher w-6 text-lg"></i>
                     <span class="ml-2.5">Kelas</span>
-                </a>
-            </li>
-             <li class="mx-2.5 my-1">
-                <a href="{{ route('admin.trainer.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-purple-50 hover:text-purple-600 hover:translate-x-1 {{ request()->routeIs('admin.trainer.*') ? 'bg-purple-50 text-purple-600 font-semibold' : '' }}">
-                    <i class="fas fa-user-graduate w-6 text-lg"></i>
-                    <span class="ml-2.5">Trainer</span>
                 </a>
             </li>
             <li class="mx-2.5 my-1">
@@ -67,24 +116,9 @@
                     @endif
                 </a>
             </li>
+                @endif
             @endif
 
-            <!-- Karyawan & Teams (Super Admin & Admin Agency) -->
-            @if(auth()->user()->isSuperAdmin() || auth()->user()->isAgencyAdmin())
-            <li class="mx-2.5 my-1">
-                <a href="{{ route('admin.karyawan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.karyawan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
-                    <i class="fas fa-user-tie w-6 text-lg"></i>
-                    <span class="ml-2.5">Karyawan</span>
-                </a>
-            </li>
-            <li class="mx-2.5 my-1">
-                <a href="#" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1">
-                    <i class="fas fa-users-cog w-6 text-lg"></i>
-                    <span class="ml-2.5">Teams</span>
-                </a>
-            </li>
-            @endif
-            
             <!-- Laporan & Payment Requests - All Admins -->
             <li class="mx-2.5 my-1">
                 <a href="{{ route('admin.laporan.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.laporan.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">

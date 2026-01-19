@@ -12,6 +12,7 @@ class Clas extends Model
     protected $fillable = [
         'user_id',
         'trainer_id',
+        'kategori_id',
         'name',
         'instansi',
         'slug',
@@ -46,11 +47,11 @@ class Clas extends Model
     ];
 
     /**
-     * Get the trainer for the class
+     * Get the category for the class
      */
-    public function trainer(): BelongsTo
+    public function kategori()
     {
-        return $this->belongsTo(Trainer::class, 'trainer_id');
+        return $this->belongsTo(Kategori::class, 'kategori_id');
     }
 }
 

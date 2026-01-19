@@ -6,18 +6,18 @@
     <title>PKS - {{ $pks_number }}</title>
     <style>
         @page {
-            margin: 2.5cm 2.5cm 2.5cm 3cm; /* Top Right Bottom Left */
+            margin: 1.5cm 2cm 1cm 2cm; /* Reduced bottom margin */
         }
         body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 12pt;
-            line-height: 1.5; /* Line spacing 1.5 */
+            font-size: 10pt;
+            line-height: 1.05;
             color: #000;
         }
         .logo-header {
             display: table;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .logo-left {
             display: table-cell;
@@ -26,8 +26,8 @@
             vertical-align: middle;
         }
         .logo-left img {
-            height: 50px;
-            width: auto;
+            height: 1.16cm;
+            width: 4.29cm;
         }
         .logo-right {
             display: table-cell;
@@ -36,7 +36,7 @@
             vertical-align: middle;
         }
         .logo-right img {
-            height: 60px;
+            height: 1.5cm;
             width: auto;
         }
         .logo-center {
@@ -45,43 +45,47 @@
         }
         .header {
             text-align: center;
-            margin-bottom: 24pt; /* 2 lines spacing */
+            margin-bottom: 12pt;
         }
         .header h1 {
-            font-size: 14pt;
+            font-size: 10pt;
             font-weight: bold;
-            margin: 6pt 0;
+            margin: 3pt 0;
             text-transform: uppercase;
-            line-height: 1.5;
+            line-height: 1.2;
         }
         .header p {
-            margin: 6pt 0;
-            font-size: 11pt;
+            margin: 3pt 0;
+            font-size: 10pt;
             text-decoration: underline;
         }
         .content {
             text-align: justify;
-            margin-bottom: 18pt;
+            margin-bottom: 8pt;
         }
         .content p {
-            margin-bottom: 12pt;
-            text-indent: 1cm; /* First line indent */
+            margin-bottom: 4pt;
+            text-indent: 1cm;
         }
         .content p.no-indent {
             text-indent: 0;
         }
+        .content p.left-align {
+            text-align: left;
+            text-indent: 0;
+        }
         .party-info {
             margin-left: 1cm;
-            margin-bottom: 18pt;
+            margin-bottom: 4pt;
         }
         .party-info table {
             width: 100%;
             border-collapse: collapse;
         }
         .party-info td {
-            padding: 3pt 0;
+            padding: 1pt 0;
             vertical-align: top;
-            border: none; /* No border - standar dokumen formal */
+            border: none;
         }
         .party-info td:first-child {
             width: 100px;
@@ -92,18 +96,18 @@
         }
         .terms {
             margin-left: 0.5cm;
-            margin-bottom: 18pt;
+            margin-bottom: 6pt;
         }
         .terms ol {
             padding-left: 1cm;
             margin: 0;
         }
         .terms li {
-            margin-bottom: 12pt;
+            margin-bottom: 2pt;
             text-align: justify;
         }
         .signature {
-            margin-top: 36pt; /* 3 lines spacing */
+            margin-top: 12pt;
             page-break-inside: avoid;
         }
         .signature table {
@@ -119,7 +123,7 @@
         }
         .signature .title {
             font-weight: bold;
-            margin-bottom: 90px; /* Space for signature */
+            margin-bottom: 40px;
         }
         .signature .name {
             font-weight: bold;
@@ -132,9 +136,10 @@
             font-weight: bold;
         }
         .closing {
-            text-align: right;
-            margin-bottom: 36pt;
-            margin-right: 1cm;
+            text-align: center;
+            margin-bottom: 12pt;
+            margin-top: 4pt;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -142,14 +147,26 @@
     <!-- Logo Header -->
     <div class="logo-header">
         <div class="logo-left">
-            @if($company_logo && file_exists($company_logo))
-                <img src="{{ $company_logo }}" alt="Creativemu Logo">
+            @if($company_logo)
+                @if(file_exists($company_logo))
+                    <img src="{{ $company_logo }}" alt="Creativemu Logo">
+                @else
+                    <!-- Debug: Logo not found at {{ $company_logo }} -->
+                @endif
+            @else
+                <!-- Debug: Company logo variable is empty -->
             @endif
         </div>
         <div class="logo-center"></div>
         <div class="logo-right">
-            @if($client_logo && file_exists($client_logo))
-                <img src="{{ $client_logo }}" alt="Client Logo">
+            @if($client_logo)
+                @if(file_exists($client_logo))
+                    <img src="{{ $client_logo }}" alt="Client Logo">
+                @else
+                    <!-- Debug: Client logo not found at {{ $client_logo }} -->
+                @endif
+            @else
+                <!-- Debug: Client logo variable is empty -->
             @endif
         </div>
     </div>
@@ -183,7 +200,7 @@
             </table>
         </div>
 
-        <p>Selanjutnya disebut sebagai <span class="bold">pihak pertama</span>.</p>
+        <p class="left-align">Selanjutnya disebut sebagai <span class="bold">pihak pertama</span>.</p>
 
         <div class="party-info">
             <table>
@@ -205,7 +222,7 @@
             </table>
         </div>
 
-        <p>Selanjutnya disebut sebagai <span class="bold">pihak kedua</span>.</p>
+        <p class="left-align">Selanjutnya disebut sebagai <span class="bold">pihak kedua</span>.</p>
 
         <p>Pada hari <span class="bold">{{ $pks_date->isoFormat('dddd') }}</span> tanggal <span class="bold">{{ $pks_date->day }} bulan {{ $pks_date->isoFormat('MMMM') }} {{ $pks_date->year }}</span> kedua belah pihak sepakat bahwa akan melakukan kerjasama Pekerjaan Pengelolaan Website dengan isi perjanjian sebagai berikut:</p>
 
@@ -236,12 +253,12 @@
         <table>
             <tr>
                 <td>
-                    <div class="title">PIHAK PERTAMA</div>
+                    <div class="title">PIHAK PERTAMA<br><br></div>
                     <div class="name">{{ $company_director }}</div>
                     <div class="position">Direktur</div>
                 </td>
                 <td>
-                    <div class="title">PIHAK KEDUA</div>
+                    <div class="title">PIHAK KEDUA<br><br></div>
                     <div class="name">{{ $client_name }}</div>
                     <div class="position">{{ $client_position }}</div>
                 </td>

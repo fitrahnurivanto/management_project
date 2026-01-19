@@ -17,6 +17,41 @@
         </div>
     </div>
 
+    <!-- Filter Section -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <form action="{{ route('admin.classes.showclas') }}" method="GET" class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-filter text-gray-500"></i>
+                <span class="text-sm font-semibold text-gray-700">Filter:</span>
+            </div>
+            
+            <!-- Filter Buttons -->
+            <a href="{{ route('admin.classes.showclas') }}" 
+               class="px-4 py-2 rounded-lg transition {{ !request('kategori') ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                <i class="fas fa-th mr-1"></i> Semua
+            </a>
+            
+            @foreach($categories as $category)
+                <a href="{{ route('admin.classes.showclas', ['kategori' => $category->id]) }}" 
+                   class="px-4 py-2 rounded-lg transition {{ request('kategori') == $category->id ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                    @php
+                        $kategoriLower = strtolower($category->nama_kategori);
+                    @endphp
+                    @if(str_contains($kategoriLower, 'private'))
+                        <i class="fas fa-user mr-1"></i>
+                    @elseif(str_contains($kategoriLower, 'reguler'))
+                        <i class="fas fa-users mr-1"></i>
+                    @elseif(str_contains($kategoriLower, 'corporate'))
+                        <i class="fas fa-building mr-1"></i>
+                    @else
+                        <i class="fas fa-circle mr-1"></i>
+                    @endif
+                    {{ $category->nama_kategori }}
+                </a>
+            @endforeach
+        </form>
+    </div>
+
     <!-- Success Message -->
     @if(session('success'))
     <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
@@ -31,7 +66,7 @@
                 <div class="p-6">
                     <!-- Header -->
                     <div class="flex justify-between items-start mb-4">
-                        <div>
+                        <div class="flex-1">
                             <h3 class="text-lg font-bold text-gray-900 line-clamp-2">{{ $class->name }}</h3>
                             @if($class->instansi)
                             <p class="text-xs text-gray-500 mt-1"><i class="fas fa-building mr-1"></i>{{ $class->instansi }}</p>
@@ -41,6 +76,32 @@
                             <i class="fas fa-check-circle mr-1"></i>Aktif
                         </span>
                     </div>
+
+                    <!-- Kategori -->
+                    @if($class->kategori)
+                    <div class="mb-3">
+                        @php
+                            $kategoriLower = strtolower($class->kategori->nama_kategori);
+                        @endphp
+                        @if(str_contains($kategoriLower, 'private'))
+                            <span class="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-user mr-1"></i>{{ $class->kategori->nama_kategori }}
+                            </span>
+                        @elseif(str_contains($kategoriLower, 'reguler'))
+                            <span class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-users mr-1"></i>{{ $class->kategori->nama_kategori }}
+                            </span>
+                        @elseif(str_contains($kategoriLower, 'corporate'))
+                            <span class="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-800 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-building mr-1"></i>{{ $class->kategori->nama_kategori }}
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-lg text-xs font-semibold">
+                                <i class="fas fa-tag mr-1"></i>{{ $class->kategori->nama_kategori }}
+                            </span>
+                        @endif
+                    </div>
+                    @endif
 
                     <!-- Trainer -->
                     <div class="mb-3">

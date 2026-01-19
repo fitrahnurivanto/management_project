@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Clas;
+use App\Models\Kategori;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
@@ -54,9 +55,7 @@ class ClasController extends Controller
         }
         
         // Get all trainers from trainers table
-        $trainers = \App\Models\Trainer::where('status', 'active')
-            ->orderBy('name')
-            ->get();
+      
         
         // Get trainer IDs yang sudah digunakan di kelas aktif
         $usedTrainerIds = Clas::whereIn('status', ['pending', 'approved'])
@@ -64,7 +63,10 @@ class ClasController extends Controller
             ->pluck('trainer_id')
             ->toArray();
         
-        return view('admin.classes.create', compact('trainers', 'usedTrainerIds'));
+        // Get all kategoris
+        $kategoris = \App\Models\Kategori::orderBy('nama_kategori')->get();
+        
+        return view('admin.classes.create', compact( 'usedTrainerIds', 'kategoris'));
     }
 
     public function store(Request $request)
@@ -76,6 +78,7 @@ class ClasController extends Controller
         }
         
         $validated = $request->validate([
+            'kategori_id' => 'required|exists:kategoris,id',
             'name' => 'required|string|max:255',
             'instansi' => 'nullable|string|max:255',
             'trainer_id' => [
@@ -94,7 +97,7 @@ class ClasController extends Controller
                 },
             ],
             'price' => 'required|numeric|min:0',
-            'amount' => 'required|integer|min:1',
+            'amount' => 'nullable|integer|min:1',
             'cost' => 'required|numeric|min:0',
             'meet' => 'required|integer|min:1',
             'duration' => 'required|integer|min:1',
@@ -107,6 +110,11 @@ class ClasController extends Controller
             'trainer.*' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
+
+        // Set default amount = 1 untuk kategori Private
+        if (!isset($validated['amount']) || empty($validated['amount'])) {
+            $validated['amount'] = 1;
+        }
 
         $validated['slug'] = Str::slug($validated['name']);
         // Total pendapatan = jumlah siswa x harga per siswa - biaya operasional
@@ -140,18 +148,13 @@ class ClasController extends Controller
         }
         
         // Get all trainers from trainers table
-        $trainers = \App\Models\Trainer::where('status', 'active')
-            ->orderBy('name')
-            ->get();
-        
+       
         // Get trainer IDs yang sudah digunakan di kelas aktif (kecuali kelas ini)
-        $usedTrainerIds = Clas::whereIn('status', ['pending', 'approved'])
-            ->where('id', '!=', $clas->id)
-            ->whereNotNull('trainer_id')
-            ->pluck('trainer_id')
-            ->toArray();
+    
+        // Get all kategoris
+        $kategoris = \App\Models\Kategori::orderBy('nama_kategori')->get();
         
-        return view('admin.classes.edit', compact('clas', 'trainers', 'usedTrainerIds'));
+        return view('admin.classes.edit', compact('clas',  'kategoris'));
     }
 
     public function update(Request $request, Clas $clas)
@@ -163,6 +166,7 @@ class ClasController extends Controller
         }
         
         $validated = $request->validate([
+            'kategori_id' => 'required|exists:kategoris,id',
             'name' => 'required|string|max:255',
             'instansi' => 'nullable|string|max:255',
             'trainer_id' => [
@@ -182,7 +186,7 @@ class ClasController extends Controller
                 },
             ],
             'price' => 'required|numeric|min:0',
-            'amount' => 'required|integer|min:1',
+            'amount' => 'nullable|integer|min:1',
             'cost' => 'required|numeric|min:0',
             'meet' => 'required|integer|min:1',
             'duration' => 'required|integer|min:1',
@@ -196,6 +200,11 @@ class ClasController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:pending,approved,rejected',
         ]);
+
+        // Set default amount = 1 untuk kategori Private
+        if (!isset($validated['amount']) || empty($validated['amount'])) {
+            $validated['amount'] = 1;
+        }
 
         $validated['slug'] = Str::slug($validated['name']);
         // Total pendapatan = jumlah siswa x harga per siswa - biaya operasional
@@ -258,17 +267,26 @@ class ClasController extends Controller
 
 
 
-    public function showclas()
+    public function showclas(Request $request)
     {
         $user = auth()->user();
         
         if (!$user->canAccessAcademy()) {
             abort(403, 'Unauthorized access.');
         }
-        $approvedClasses = Clas::where('status', 'approved')
-                               ->latest()
-                               ->get();
         
-        return view('admin.classes.showclas', compact('approvedClasses'));
+        // Get categories from kategoris table
+        $categories = Kategori::all();
+        
+        $query = Clas::where('status', 'approved');
+        
+        // Filter by kategori_id if provided
+        if ($request->filled('kategori')) {
+            $query->where('kategori_id', $request->kategori);
+        }
+        
+        $approvedClasses = $query->with('kategori')->latest()->get();
+        
+        return view('admin.classes.showclas', compact('approvedClasses', 'categories'));
     }
 }

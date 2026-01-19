@@ -14,6 +14,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ClasController;
 use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\DivisionController;
 
 // Public routes - Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -48,6 +49,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {
+    
+    // Division switcher route
+    Route::post('/set-division', [DivisionController::class, 'setDivision'])->name('division.set');
     
     // Dashboard routes - role based (Admin & Employee only)
     Route::get('/dashboard', function() {
@@ -141,13 +145,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tracking', [ClasController::class, 'track'])->name('tracking.index');
         
         // Trainer Management
-        Route::get('/trainer',[TrainerController::class, 'index'])->name('trainer.index');
-        Route::get('/trainer/create',[TrainerController::class, 'create'])->name('trainer.create');
-        Route::post('/trainer',[TrainerController::class, 'store'])->name('trainer.store');
-        Route::get('/trainer/{trainer}',[TrainerController::class, 'show'])->name('trainer.show');
-        Route::get('/trainer/{trainer}/edit',[TrainerController::class, 'edit'])->name('trainer.edit');
-        Route::put('/trainer/{trainer}',[TrainerController::class, 'update'])->name('trainer.update');
-        Route::delete('/trainer/{trainer}',[TrainerController::class, 'destroy'])->name('trainer.destroy');
 
         // Settings
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

@@ -50,21 +50,11 @@
                             <p class="text-sm text-gray-600">Instansi</p>
                             <p class="font-medium text-gray-900">{{ $clas->instansi ?? '-' }}</p>
                         </div>
-                        <div class="col-span-2">
-                            <p class="text-sm text-gray-600">Trainer</p>
-                            <div class="font-medium text-gray-900">
-                                @if(is_array($clas->trainer))
-                                    @foreach($clas->trainer as $trainer)
-                                        <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs mr-1 mb-1">
-                                            <i class="fas fa-user-tie mr-1"></i>{{ $trainer }}
-                                        </span>
-                                    @endforeach
-                                @else
-                                    <span class="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                                        <i class="fas fa-user-tie mr-1"></i>{{ $clas->trainer }}
-                                    </span>
-                                @endif
-                            </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Jumlah Siswa</p>
+                            <p class="font-medium text-gray-900">
+                                <i class="fas fa-users text-gray-500 mr-1"></i>{{ $clas->amount }} siswa
+                            </p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-600">Metode</p>
@@ -153,7 +143,7 @@
                     <div class="space-y-3">
                         <div class="flex justify-between items-center pb-3 border-b">
                             <span class="text-sm text-gray-600">Harga Kelas</span>
-                            <span class="font-medium text-gray-900">Rp {{ number_format($clas->amount, 0, ',', '.') }}</span>
+                            <span class="font-medium text-gray-900">Rp {{ number_format($clas->price, 0, ',', '.') }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-3 border-b">
                             <span class="text-sm text-gray-600">Biaya Operasional</span>

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Client;
+use App\Models\Kategori;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,6 +15,17 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        // Create Kategori default
+        $kategoris = ['Corporate Training', 'Private', 'Reguler'];
+        
+        foreach ($kategoris as $kategori) {
+            Kategori::create([
+                'nama_kategori' => $kategori,
+            ]);
+        }
+        
+        echo "✅ Kategori created: " . implode(', ', $kategoris) . "\n\n";
+
         // Create Admin User
         $admin = User::create([
             'name' => 'Admin Utama',

@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
 <div class="p-8">
     <div class="max-w-5xl mx-auto">
@@ -16,7 +15,7 @@
 
         <!-- Form -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-            <form action="{{ route('admin.orders.pks.generate', $order) }}" method="POST" id="pksForm">
+            <form action="{{ route('admin.orders.pks.generate', $order) }}" method="POST" enctype="multipart/form-data" id="pksForm">
                 @csrf
                 
                 <div class="p-6 space-y-6">

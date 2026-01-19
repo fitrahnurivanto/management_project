@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('clas', function (Blueprint $table) {
-            $table->foreignId('trainer_id')->nullable()->after('user_id')->constrained('trainers')->onDelete('set null');
+        Schema::create('kategoris', function (Blueprint $table) {
+            $table->id();
+            $table->string('nama_kategori');
+            $table->timestamps();
         });
     }
 
@@ -21,9 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('clas', function (Blueprint $table) {
-            $table->dropForeign(['trainer_id']);
-            $table->dropColumn('trainer_id');
-        });
+        Schema::dropIfExists('kategoris');
     }
 };

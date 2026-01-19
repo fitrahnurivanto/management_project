@@ -500,11 +500,14 @@ class OrderController extends Controller
         $companyDirector = \App\Models\Setting::get('company_director', 'Agus Susanto');
         $companyAddress = \App\Models\Setting::get('company_address', 'Jl. Gn. Bulu No.89, RT.34, Argorejo, Kec. Sedayu, Kabupaten Bantul, Yogyakarta 55752');
 
+        // Refresh client data to get latest logo
+        $order->client->refresh();
+
         // Prepare data for PDF
         $data = [
             'order' => $order,
             'pks_number' => $validated['pks_number'],
-            'pks_date' => \Carbon\Carbon::parse($validated['pks_date']),
+            'pks_date' => \Carbon\Carbon::parse($validated['pks_date'])->locale('id'),
             'duration' => $validated['duration'],
             'client_name' => $validated['client_name'],
             'client_position' => $validated['client_position'],
