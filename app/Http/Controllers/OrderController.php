@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Presenters\OrderPresenter;
 
 class OrderController extends Controller
 {
@@ -125,6 +126,12 @@ class OrderController extends Controller
         }
         
         $pendingCount = $pendingQuery->count();
+
+        // Attach presenters to orders
+        $orders->getCollection()->transform(function ($order) {
+            $order->presenter = new OrderPresenter($order);
+            return $order;
+        });
 
         return view('admin.orders.index', compact('orders', 'pendingCount', 'user', 'selectedYear', 'availableYears'));
     }

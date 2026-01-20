@@ -209,16 +209,26 @@ class ProjectController extends Controller
             }
         }
 
+        // Eager load all relationships to avoid N+1 queries
         $project->load([
             'client.user',
             'order.items.service',
             'order.items.servicePackage',
             'teams.members.user',
-            'tasks.assignee',
+            'tasks' => function($query) {
+                $query->with('assignee')->take(5);
+            },
             'milestones',
-            'expenses',
-            'chats.user',
+            'expenses' => function($query) {
+                $query->orderBy('expense_date', 'desc');
+            },
+            'chats' => function($query) {
+                $query->with('user')->latest()->take(50);
+            },
         ]);
+
+        // Attach presenter for helper methods
+        $project->presenter = new \App\Presenters\ProjectPresenter($project);
 
         // Calculate project statistics
         $stats = [
@@ -265,14 +275,8 @@ class ProjectController extends Controller
         // Get available employees for team assignment
         $availableEmployees = \App\Models\User::where('role', 'employee')->get();
 
-        // Get project chats (latest 50 messages)
-        $chats = $project->chats()
-            ->with('user')
-            ->latest()
-            ->take(50)
-            ->get()
-            ->reverse()
-            ->values();
+        // Chats already loaded via eager loading, just reverse order
+        $chats = $project->chats->reverse()->values();
 
         return view('admin.projects.show', compact('project', 'stats', 'deadline', 'picMember', 'activities', 'availableEmployees', 'chats'));
     }
