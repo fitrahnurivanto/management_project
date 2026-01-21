@@ -32,13 +32,15 @@ class LandingController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:20',
             'company_name' => 'nullable|string|max:255',
+            'address' => 'required|string',
             'package_selections' => 'required|json',
             'notes' => 'nullable|string',
             'payment_method' => 'required|in:Transfer,E-Wallet,Cash',
             'payment_type' => 'required|in:full,installment',
             'payment_proof' => 'nullable|image|mimes:jpeg,png,jpg,pdf|max:2048',
         ], [
-            'package_selections.required' => 'Silakan pilih minimal satu paket layanan'
+            'package_selections.required' => 'Silakan pilih minimal satu paket layanan',
+            'address.required' => 'Alamat harus diisi untuk dokumen PKS'
         ]);
 
         $packageSelections = json_decode($validated['package_selections'], true);
@@ -53,7 +55,7 @@ class LandingController extends Controller
             'email' => $validated['email'],
             'phone' => $validated['phone'],
             'company_name' => $validated['company_name'],
-            'address' => 'N/A', // Will be filled later if needed
+            'address' => $validated['address'], // Address for PKS document
         ]);
 
         // 2. Calculate total from selected packages or services

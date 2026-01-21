@@ -17,11 +17,16 @@ class ProjectExpense extends Model
         'expense_date',
         'receipt_file',
         'created_by',
+        'approval_status',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'expense_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     /**
@@ -35,8 +40,16 @@ class ProjectExpense extends Model
     /**
      * Get the user who created the expense.
      */
-    public function creator()
+    public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the user who approved/rejected the expense.
+     */
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

@@ -198,7 +198,7 @@ class ClasController extends Controller
             'trainer' => 'required|array|min:1',
             'trainer.*' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:pending,approved,rejected',
+            'status' => 'required|in:pending,approved,rejected,done',
         ]);
 
         // Set default amount = 1 untuk kategori Private
@@ -258,6 +258,26 @@ class ClasController extends Controller
             ->with('success', 'Kelas berhasil di-reject.');
     }
 
+    public function markAsDone(Clas $clas)
+    {
+        $user = auth()->user();
+        
+        if (!$user->canAccessAcademy()) {
+            abort(403, 'Unauthorized access.');
+        }
+        
+        // Hanya kelas dengan status approved yang bisa diselesaikan
+        if ($clas->status !== 'approved') {
+            return redirect()->back()
+                ->with('error', 'Hanya kelas dengan status Approved yang dapat diselesaikan.');
+        }
+        
+        $clas->update(['status' => 'done']);
+
+        return redirect()->back()
+            ->with('success', 'Kelas berhasil diselesaikan.');
+    }
+
 
    public function track(){
 
@@ -278,7 +298,8 @@ class ClasController extends Controller
         // Get categories from kategoris table
         $categories = Kategori::all();
         
-        $query = Clas::where('status', 'approved');
+        // Tampilkan semua kelas kecuali yang pending
+        $query = Clas::whereIn('status', ['approved', 'done', 'rejected']);
         
         // Filter by kategori_id if provided
         if ($request->filled('kategori')) {

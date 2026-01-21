@@ -174,6 +174,11 @@ function showOrderForm() {
                         <input type="text" name="company_name" class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500">
                     </div>
                 </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap *</label>
+                    <textarea name="address" rows="2" required class="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="Alamat lengkap untuk PKS/Surat Perjanjian"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Alamat ini akan digunakan dalam dokumen PKS (Perjanjian Kerjasama)</p>
+                </div>
             </div>
 
             <!-- Payment Details -->

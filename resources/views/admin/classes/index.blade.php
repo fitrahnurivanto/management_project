@@ -61,6 +61,7 @@
                 <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                 <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Active</option>
                 <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                <option value="done" {{ request('status') == 'done' ? 'selected' : '' }}>Selesai</option>
             </select>
             <select name="method" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#7b2cbf] focus:border-[#7b2cbf]">
                 <option value="">Semua Metode</option>
@@ -160,7 +161,11 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        @if($class->status === 'approved')
+                        @if($class->status === 'done')
+                            <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                <i class="fas fa-check-double mr-1"></i> Selesai
+                            </span>
+                        @elseif($class->status === 'approved')
                             <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                 <i class="fas fa-check-circle mr-1"></i> Active
                             </span>

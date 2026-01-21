@@ -76,9 +76,16 @@
             <div x-show="expanded" x-collapse class="mt-2 space-y-2">
                 @foreach($order->items as $item)
                 <div class="text-sm">
-                    <div class="flex items-center gap-2">
-                        <span class="font-medium">{{ $item->service->name }}</span>
-                        <span class="text-gray-500">({{ $item->quantity }}x)</span>
+                    <div class="flex items-start gap-2">
+                        <div class="flex-1">
+                            <span class="font-medium">{{ $item->service->name }}</span>
+                            @if($item->servicePackage || $item->package_name)
+                            <span class="text-xs text-gray-500 ml-1">
+                                - Paket: {{ $item->servicePackage?->name ?? $item->package_name }}
+                            </span>
+                            @endif
+                            <span class="text-gray-500 ml-1">({{ $item->quantity }}x)</span>
+                        </div>
                     </div>
                 </div>
                 @endforeach

@@ -36,7 +36,15 @@
                     @forelse($requests as $request)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 text-sm text-gray-900">{{ $request->created_at->format('d/m/Y') }}</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">{{ $request->project->project_name }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                @if($request->project)
+                                    {{ $request->project->project_name }}
+                                @elseif($request->clas)
+                                    {{ $request->clas->name }} <span class="text-xs text-gray-500">(Kelas)</span>
+                                @else
+                                    <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-sm text-gray-900">Rp {{ number_format($request->requested_amount, 0, ',', '.') }}</td>
                             <td class="px-6 py-4 text-sm">
                                 @if($request->approved_amount)

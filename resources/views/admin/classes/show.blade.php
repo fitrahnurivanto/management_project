@@ -16,6 +16,17 @@
                     </div>
                 </div>
                 <div class="flex gap-2">
+                    @if($clas->status === 'approved')
+                        <form action="{{ route('admin.classes.mark-as-done', $clas) }}" 
+                              method="POST" 
+                              onsubmit="return confirm('Apakah Anda yakin ingin menyelesaikan kelas ini?');">
+                            @csrf
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                                <i class="fas fa-check-circle mr-2"></i>Selesaikan Kelas
+                            </button>
+                        </form>
+                    @endif
                     <a href="{{ route('admin.classes.edit', $clas) }}" 
                        class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
                         <i class="fas fa-edit mr-2"></i>Edit
@@ -73,7 +84,11 @@
                         <div>
                             <p class="text-sm text-gray-600">Status</p>
                             <p class="font-medium text-gray-900">
-                                @if($clas->status === 'approved')
+                                @if($clas->status === 'done')
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                        <i class="fas fa-check-double mr-1"></i> Selesai
+                                    </span>
+                                @elseif($clas->status === 'approved')
                                     <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
                                         <i class="fas fa-check-circle mr-1"></i> Approved
                                     </span>

@@ -140,6 +140,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/classes/{clas}', [ClasController::class, 'destroy'])->name('classes.destroy');
         Route::post('/classes/{clas}/approve', [ClasController::class, 'approve'])->name('classes.approve');
         Route::post('/classes/{clas}/reject', [ClasController::class, 'reject'])->name('classes.reject');
+        Route::post('/classes/{clas}/mark-as-done', [ClasController::class, 'markAsDone'])->name('classes.mark-as-done');
 
         // Tracking Kelas
         Route::get('/tracking', [ClasController::class, 'track'])->name('tracking.index');

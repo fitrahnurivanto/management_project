@@ -149,8 +149,15 @@
                             </td>
                             <td class="px-6 py-4">
                                 <div>
-                                    <p class="text-sm font-medium text-gray-900">{{ $request->project->project_name }}</p>
-                                    <p class="text-xs text-gray-500">{{ $request->project->project_code }}</p>
+                                    @if($request->project)
+                                        <p class="text-sm font-medium text-gray-900">{{ $request->project->project_name }}</p>
+                                        <p class="text-xs text-gray-500">{{ $request->project->project_code }}</p>
+                                    @elseif($request->clas)
+                                        <p class="text-sm font-medium text-gray-900">{{ $request->clas->name }}</p>
+                                        <p class="text-xs text-gray-500">Kelas Academy</p>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="px-6 py-4">

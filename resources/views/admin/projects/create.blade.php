@@ -80,8 +80,10 @@
                                             <span class="text-gray-700">
                                                 <i class="fas fa-check text-green-500 mr-1"></i>
                                                 {{ $item->service->name }}
-                                                @if($item->package)
-                                                <span class="text-xs text-gray-500">({{ $item->package->name }})</span>
+                                                @if($item->servicePackage || $item->package_name)
+                                                <span class="text-xs text-indigo-600 font-medium">
+                                                    - {{ $item->servicePackage?->name ?? $item->package_name }}
+                                                </span>
                                                 @endif
                                             </span>
                                             <span class="text-gray-900 font-semibold">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
@@ -239,9 +241,10 @@ function selectOrder(orderId) {
         // Update services list in summary
         let servicesHtml = '<ul class="space-y-1">';
         selectedOrder.items.forEach(item => {
+            const packageInfo = item.service_package || item.package_name ? ` - ${item.service_package?.name || item.package_name}` : '';
             servicesHtml += `<li class="flex items-start">
                 <i class="fas fa-check text-green-300 mr-2 mt-0.5"></i>
-                <span class="text-sm">${item.service.name}</span>
+                <span class="text-sm">${item.service.name}${packageInfo}</span>
             </li>`;
         });
         servicesHtml += '</ul>';
@@ -261,7 +264,7 @@ function selectOrder(orderId) {
                     <div class="flex justify-between items-start mb-2">
                         <div class="flex-1">
                             <p class="font-semibold text-gray-900">${item.service.name}</p>
-                            ${item.package ? `<p class="text-xs text-gray-500">Paket: ${item.package.name}</p>` : ''}
+                            ${item.service_package || item.package_name ? `<p class="text-xs text-indigo-600 font-medium">Paket: ${item.service_package?.name || item.package_name}</p>` : ''}
                         </div>
                         <span class="text-sm font-bold text-[#7b2cbf]">Rp ${new Intl.NumberFormat('id-ID').format(item.subtotal)}</span>
                     </div>

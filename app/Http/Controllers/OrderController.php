@@ -20,7 +20,7 @@ class OrderController extends Controller
     {
         $user = auth()->user();
         
-        $query = Order::with(['client.user', 'items.service.category']);
+        $query = Order::with(['client.user', 'items.service.category', 'items.servicePackage']);
 
         // Apply division filter based on user role
         if ($user->isAgencyAdmin()) {
@@ -274,9 +274,17 @@ class OrderController extends Controller
                 'calculated_paid_amount' => $paidAmount,
             ]);
             
+            // Generate PKS number jika belum ada
+            if (empty($order->pks_number)) {
+                $pksNumber = $this->generatePksNumber($order);
+            } else {
+                $pksNumber = $order->pks_number;
+            }
+            
             $order->update([
                 'payment_status' => 'paid',
                 'paid_amount' => $paidAmount,
+                'pks_number' => $pksNumber,
                 'confirmed_at' => now(),
                 'confirmed_by' => auth()->id(),
             ]);

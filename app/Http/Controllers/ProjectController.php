@@ -18,7 +18,7 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
         
-        $query = Project::with(['client', 'order.items.service.category', 'teams.members']);
+        $query = Project::with(['client', 'order.items.service.category', 'order.items.servicePackage', 'teams.members']);
 
         if (!$user->isAdmin()) {
             // Employee hanya lihat project yang mereka ikuti
@@ -109,7 +109,7 @@ class ProjectController extends Controller
         // Get orders yang sudah dibayar tapi belum ada projectnya
         $ordersQuery = Order::where('payment_status', 'paid')
             ->doesntHave('project')
-            ->with(['client', 'items.service.category']);
+            ->with(['client', 'items.service.category', 'items.servicePackage']);
         
         // Filter by division for agency/academy admin
         if ($user->isAgencyAdmin()) {

@@ -242,8 +242,8 @@
                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div class="flex-1">
                             <p class="font-semibold text-gray-900">{{ $item->service->name ?? 'N/A' }}</p>
-                            @if($item->servicePackage)
-                            <p class="text-sm text-gray-600">Paket: {{ $item->servicePackage->name }}</p>
+                            @if($item->servicePackage || $item->package_name)
+                            <p class="text-sm text-indigo-600 font-medium">Paket: {{ $item->servicePackage?->name ?? $item->package_name }}</p>
                             @endif
                             <p class="text-xs text-gray-500 mt-1">Qty: {{ $item->quantity }}</p>
                         </div>

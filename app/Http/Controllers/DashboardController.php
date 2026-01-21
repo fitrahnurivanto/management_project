@@ -243,6 +243,7 @@ class DashboardController extends Controller
         
         // Get target for selected month if different
         $selectedTargetAmount = $targetAmount;
+        $selectedTargetNotes = '';
         if ($selectedMonth != $currentMonth || $selectedYear != $currentYear) {
             $selectedTarget = DB::table('monthly_targets')
                 ->where('year', $selectedYear)
@@ -250,6 +251,15 @@ class DashboardController extends Controller
                 ->where('division', $activeDivision)
                 ->first();
             $selectedTargetAmount = $selectedTarget ? $selectedTarget->target_amount : 0;
+            $selectedTargetNotes = $selectedTarget ? $selectedTarget->notes : '';
+        } else {
+            // Get notes for current month
+            $currentTarget = DB::table('monthly_targets')
+                ->where('year', $currentYear)
+                ->where('month', $currentMonth)
+                ->where('division', $activeDivision)
+                ->first();
+            $selectedTargetNotes = $currentTarget ? $currentTarget->notes : '';
         }
         
         for ($week = 1; $week <= 4; $week++) {
@@ -269,8 +279,11 @@ class DashboardController extends Controller
                       ->orWhere('payment_status', 'partial');
                 })
                 ->where(function($q) use ($weekStart, $weekEnd) {
-                    // Use COALESCE to handle NULL order_date
-                    $q->whereRaw('COALESCE(order_date, confirmed_at) BETWEEN ? AND ?', [$weekStart, $weekEnd]);
+                    // Use DATE() to compare dates only, ignoring time
+                    $q->whereRaw('DATE(COALESCE(order_date, confirmed_at)) BETWEEN ? AND ?', [
+                        $weekStart->format('Y-m-d'), 
+                        $weekEnd->format('Y-m-d')
+                    ]);
                 })
                 ->whereHas('items.service.category', function($q) use ($activeDivision) {
                     $q->where('division', $activeDivision);
@@ -352,6 +365,7 @@ class DashboardController extends Controller
             'weeklyData',
             'targetAmount',
             'selectedTargetAmount',
+            'selectedTargetNotes',
             'selectedMonth',
             'selectedYear',
             'activeDivision',
@@ -860,14 +874,20 @@ class DashboardController extends Controller
             $message = 'Target berhasil disimpan!';
         }
 
-        // Redirect back to dashboard with division parameter (for super admin)
-        $redirectParams = [];
+        // Redirect back to dashboard with division, month, and year parameters
+        $redirectParams = [
+            'target_month' => $validated['month'],
+            'target_year' => $validated['year'],
+        ];
         
         if (auth()->user()->isSuperAdmin()) {
             $redirectParams['division'] = $validated['division'];
         }
 
-        return redirect()->route('admin.dashboard', $redirectParams)->with('success', $message);
+        // Build URL with hash fragment
+        $url = route('admin.dashboard', $redirectParams) . '#target-omset';
+        
+        return redirect($url)->with('success', $message);
     }
 
     /**

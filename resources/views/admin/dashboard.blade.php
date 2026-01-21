@@ -463,6 +463,11 @@
                         @if($selectedTargetAmount > 0)
                             <p class="text-sm text-gray-500">Target</p>
                             <p class="text-xl font-bold text-indigo-600">Rp {{ number_format($selectedTargetAmount, 0, ',', '.') }}</p>
+                            @if(!empty($selectedTargetNotes))
+                                <p class="text-xs text-gray-600 mt-1 italic">
+                                    <i class="fas fa-sticky-note mr-1"></i>{{ $selectedTargetNotes }}
+                                </p>
+                            @endif
                             <button onclick="openTargetModal()" class="mt-2 text-xs text-indigo-600 hover:text-indigo-800">
                                 <i class="fas fa-edit mr-1"></i>Edit Target
                             </button>
@@ -747,7 +752,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Catatan (Optional)</label>
                     <textarea name="notes" rows="2" 
                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
-                              placeholder="Target untuk..."></textarea>
+                              placeholder="Target untuk...">{{ $selectedTargetNotes }}</textarea>
                 </div>
             </div>
 

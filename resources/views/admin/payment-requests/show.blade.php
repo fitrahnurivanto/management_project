@@ -72,15 +72,24 @@
                         </div>
                     </div>
 
-                    <!-- Project Info -->
+                    <!-- Project/Class Info -->
                     <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
                         <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-project-diagram text-white text-lg"></i>
+                            <i class="fas {{ $paymentRequest->project ? 'fa-project-diagram' : 'fa-graduation-cap' }} text-white text-lg"></i>
                         </div>
                         <div class="flex-1">
-                            <p class="text-sm text-purple-700 font-medium mb-1">Project</p>
-                            <p class="text-lg font-bold text-gray-900">{{ $paymentRequest->project->project_name }}</p>
-                            <p class="text-sm text-gray-600">{{ $paymentRequest->project->project_code }}</p>
+                            @if($paymentRequest->project)
+                                <p class="text-sm text-purple-700 font-medium mb-1">Project</p>
+                                <p class="text-lg font-bold text-gray-900">{{ $paymentRequest->project->project_name }}</p>
+                                <p class="text-sm text-gray-600">{{ $paymentRequest->project->project_code }}</p>
+                            @elseif($paymentRequest->clas)
+                                <p class="text-sm text-purple-700 font-medium mb-1">Kelas Academy</p>
+                                <p class="text-lg font-bold text-gray-900">{{ $paymentRequest->clas->name }}</p>
+                                <p class="text-sm text-gray-600">{{ $paymentRequest->clas->code ?? 'Kelas Academy' }}</p>
+                            @else
+                                <p class="text-sm text-purple-700 font-medium mb-1">Project/Kelas</p>
+                                <p class="text-lg font-bold text-gray-400">Tidak ada relasi</p>
+                            @endif
                         </div>
                     </div>
 
@@ -406,10 +415,17 @@ function submitForm(action) {
             <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border border-gray-200 p-6">
                 <h3 class="text-sm font-bold text-gray-700 mb-4">Quick Actions</h3>
                 <div class="space-y-2">
-                    <a href="{{ route('admin.projects.show', $paymentRequest->project) }}" 
-                       class="block w-full bg-white text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition text-sm font-medium border border-gray-200">
-                        <i class="fas fa-project-diagram mr-2"></i> Lihat Project
-                    </a>
+                    @if($paymentRequest->project)
+                        <a href="{{ route('admin.projects.show', $paymentRequest->project) }}" 
+                           class="block w-full bg-white text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition text-sm font-medium border border-gray-200">
+                            <i class="fas fa-project-diagram mr-2"></i> Lihat Project
+                        </a>
+                    @elseif($paymentRequest->clas)
+                        <a href="{{ route('admin.classes.show', $paymentRequest->clas) }}" 
+                           class="block w-full bg-white text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition text-sm font-medium border border-gray-200">
+                            <i class="fas fa-graduation-cap mr-2"></i> Lihat Kelas
+                        </a>
+                    @endif
                     <a href="{{ route('admin.karyawan.show', $paymentRequest->user->id) }}" 
                        class="block w-full bg-white text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition text-sm font-medium border border-gray-200">
                         <i class="fas fa-user mr-2"></i> Lihat Profil Employee
