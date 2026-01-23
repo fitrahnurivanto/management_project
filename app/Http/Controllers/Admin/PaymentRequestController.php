@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
 use Illuminate\Http\Request;
+use App\Notifications\PaymentReceivedNotification;
 
 class PaymentRequestController extends Controller
 {
@@ -99,11 +100,14 @@ class PaymentRequestController extends Controller
             'approved_at' => now(),
         ]);
 
-        // TODO: Send notification to employee
+        // Send notification to employee
+        if ($paymentRequest->user) {
+            $paymentRequest->user->notify(new PaymentReceivedNotification($paymentRequest));
+        }
 
         $message = $status === 'approved' 
-            ? 'Permintaan pembayaran berhasil disetujui'
-            : 'Permintaan pembayaran ditolak';
+            ? 'Permintaan pembayaran berhasil disetujui dan employee dinotifikasi'
+            : 'Permintaan pembayaran ditolak dan employee dinotifikasi';
 
         return redirect()->route('admin.payment-requests.index')
             ->with('success', $message);

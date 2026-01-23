@@ -85,7 +85,7 @@
                         <div>
                             <small class="text-gray-600 block mb-1">Deadline</small>
                             <div class="flex items-center gap-2">
-                                <strong class="text-gray-900">{{ $project->end_date->format('d F Y') }}</strong>
+                                <strong class="text-gray-900">{{ $project->end_date ? $project->end_date->format('d F Y') : 'Belum ditentukan' }}</strong>
                                 @if($project->end_date->isPast() && $project->status != 'completed')
                                     <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded">Overdue</span>
                                 @endif

@@ -30,17 +30,34 @@
     
     <style>
         [x-cloak] { display: none !important; }
+        
+        /* Responsive Table Wrapper */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .table-responsive table {
+                min-width: 600px;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     @include('components.sidebar')
     
-    <div class="ml-64 min-h-screen">
-        <div class="sticky top-0 bg-white px-8 py-4 shadow-sm z-10 flex justify-between items-center">
-            <div>
-                <h5 class="text-xl font-semibold text-gray-800">@yield('page-title', 'Dashboard')</h5>
+    <!-- Main Content - Responsive -->
+    <div class="lg:ml-64 min-h-screen">
+        <!-- Header - Responsive -->
+        <div class="sticky top-0 bg-white px-4 sm:px-6 lg:px-8 py-4 shadow-sm z-10 flex justify-between items-center">
+            <!-- Page Title - Responsive -->
+            <div class="ml-12 lg:ml-0">
+                <h5 class="text-lg sm:text-xl font-semibold text-gray-800 truncate">@yield('page-title', 'Dashboard')</h5>
             </div>
-            <div class="flex items-center gap-4">
+            <!-- User Info - Responsive -->
+            <div class="flex items-center gap-2 sm:gap-4">
                 <!-- Notification Bell -->
                 <div x-data="notificationSystem" class="relative">
                     <button @click="toggleNotifications" class="relative text-gray-600 hover:text-gray-900 transition">
@@ -49,7 +66,7 @@
                               class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-pulse"></span>
                     </button>
                     
-                    <!-- Notification Dropdown -->
+                    <!-- Notification Dropdown - Responsive -->
                     <div x-show="showNotifications" x-cloak @click.away="showNotifications = false"
                          x-transition:enter="transition ease-out duration-200"
                          x-transition:enter-start="opacity-0 scale-95"
@@ -57,7 +74,7 @@
                          x-transition:leave="transition ease-in duration-150"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                         class="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50">
                         <div class="p-4 border-b border-gray-200">
                             <h3 class="font-semibold text-gray-900">Notifications</h3>
                         </div>
@@ -92,15 +109,18 @@
                     </div>
                 </div>
                 
-                <span class="text-gray-600">
+                <!-- User Name - Hidden on mobile -->
+                <span class="hidden md:flex text-gray-600 items-center">
                     <i class="fas fa-user-circle mr-2"></i>
-                    {{ auth()->user()->name }}
+                    <span class="truncate max-w-[150px]">{{ auth()->user()->name }}</span>
                 </span>
-                <span class="px-3 py-1 bg-indigo-600 text-white text-sm font-medium rounded-lg">{{ ucfirst(auth()->user()->role) }}</span>
+                <!-- Role Badge -->
+                <span class="px-2 sm:px-3 py-1 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-lg">{{ ucfirst(auth()->user()->role) }}</span>
             </div>
         </div>
         
-        <div class="p-8">
+        <!-- Main Content Area - Responsive Padding -->
+        <div class="p-4 sm:p-6 lg:p-8">
             @yield('content')
         </div>
     </div>

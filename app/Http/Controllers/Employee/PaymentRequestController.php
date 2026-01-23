@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentRequest;
 use App\Models\Project;
 use App\Models\TeamMember;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class PaymentRequestController extends Controller
 {
@@ -66,7 +68,7 @@ class PaymentRequestController extends Controller
             }
         }
 
-        PaymentRequest::create([
+        $paymentRequest = PaymentRequest::create([
             'user_id' => auth()->id(),
             'project_id' => $validated['type'] === 'project' ? $validated['project_id'] : null,
             'class_id' => $validated['type'] === 'class' ? $validated['class_id'] : null,
@@ -76,10 +78,14 @@ class PaymentRequestController extends Controller
             'status' => 'pending',
         ]);
 
-        // TODO: Send notification to admins
+        // Send notification to admins
+        $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\PaymentReceivedNotification($paymentRequest));
+        }
 
         return redirect()->route('employee.payment-requests.index')
-            ->with('success', 'Permintaan pembayaran berhasil diajukan! Menunggu persetujuan admin.');
+            ->with('success', 'Permintaan pembayaran berhasil diajukan! Admin akan dinotifikasi.');
     }
 
     public function show(PaymentRequest $paymentRequest)

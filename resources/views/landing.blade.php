@@ -24,51 +24,56 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
+    <!-- Header - Responsive -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-brand-purple rounded-lg flex items-center justify-center">
-                        <i class="fas fa-lightbulb text-white text-xl"></i>
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-brand-purple rounded-lg flex items-center justify-center">
+                        <i class="fas fa-lightbulb text-white text-lg sm:text-xl"></i>
                     </div>
-                    <h1 class="text-2xl font-bold brand-purple">CREATIVEMU</h1>
+                    <h1 class="text-lg sm:text-2xl font-bold brand-purple">CREATIVEMU</h1>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <a href="https://wa.me/6289618472759?text=Halo%20Admin%20CREATIVEMU%2C%0A%0ASaya%20ingin%20berkonsultasi%20dan%20bertanya%20mengenai%20layanan%20digital%20marketing.%0A%0ATerima%20kasih." target="_blank" class="flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
-                        <i class="fab fa-whatsapp text-xl"></i>
-                        <span>Chat WhatsApp</span>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="https://wa.me/6289618472759?text=Halo%20Admin%20CREATIVEMU%2C%0A%0ASaya%20ingin%20berkonsultasi%20dan%20bertanya%20mengenai%20layanan%20digital%20marketing.%0A%0ATerima%20kasih." target="_blank" class="flex items-center space-x-1 sm:space-x-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 sm:px-4 rounded-lg transition text-sm sm:text-base">
+                        <i class="fab fa-whatsapp text-lg sm:text-xl"></i>
+                        <span class="hidden sm:inline">Chat WhatsApp</span>
+                        <span class="sm:hidden">Chat</span>
                     </a>
-                    <a href="{{ route('login') }}" class="bg-brand-purple text-white px-4 py-2 rounded-lg hover:bg-brand-purple transition font-semibold">
-                        <i class="fas fa-sign-in-alt mr-1"></i> Admin Login
+                    <a href="{{ route('login') }}" class="bg-brand-purple text-white px-3 py-2 sm:px-4 rounded-lg hover:bg-brand-purple transition font-semibold text-sm sm:text-base">
+                        <i class="fas fa-sign-in-alt mr-1"></i>
+                        <span class="hidden sm:inline">Admin Login</span>
+                        <span class="sm:hidden">Login</span>
                     </a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="bg-gradient-to-r from-purple-900 via-purple-700 to-pink-600 text-white py-20">
+    <!-- Hero Section - Responsive -->
+    <section class="bg-gradient-to-r from-purple-900 via-purple-700 to-pink-600 text-white py-12 sm:py-16 lg:py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="mb-6">
-                <div class="inline-block w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4">
-                    <i class="fas fa-lightbulb text-white text-4xl"></i>
+            <div class="mb-4 sm:mb-6">
+                <div class="inline-block w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
+                    <i class="fas fa-lightbulb text-white text-3xl sm:text-4xl"></i>
                 </div>
             </div>
-            <h2 class="text-4xl md:text-5xl font-bold mb-4">Tingkatkan Bisnis Anda Bersama CREATIVEMU</h2>
-            <p class="text-xl mb-8 text-purple-100">Solusi Digital Marketing, Website, SEO, dan Media Sosial untuk Bisnis Anda</p>
-            <a href="https://wa.me/6289618472759?text=Halo%20Admin%20CREATIVEMU%2C%0A%0ASaya%20tertarik%20dengan%20layanan%20digital%20marketing%20Anda.%0A%0AMohon%20informasi%20lebih%20lanjut.%0A%0ATerima%20kasih." target="_blank" class="inline-block bg-white text-purple-700 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg">
-                <i class="fab fa-whatsapp mr-2"></i> Hubungi Kami via WhatsApp
+            <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 px-2">Tingkatkan Bisnis Anda Bersama CREATIVEMU</h2>
+            <p class="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 text-purple-100 px-4 sm:px-0">Solusi Digital Marketing, Website, SEO, dan Media Sosial untuk Bisnis Anda</p>
+            <a href="https://wa.me/6289618472759?text=Halo%20Admin%20CREATIVEMU%2C%0A%0ASaya%20tertarik%20dengan%20layanan%20digital%20marketing%20Anda.%0A%0AMohon%20informasi%20lebih%20lanjut.%0A%0ATerima%20kasih." target="_blank" class="inline-flex items-center justify-center bg-white text-purple-700 px-6 sm:px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg text-sm sm:text-base">
+                <i class="fab fa-whatsapp mr-2"></i>
+                <span class="hidden xs:inline">Hubungi Kami via WhatsApp</span>
+                <span class="xs:hidden">Hubungi via WhatsApp</span>
             </a>
         </div>
     </section>
 
-    <!-- Services Section -->
-    <section class="py-16 bg-white">
+    <!-- Services Section - Responsive -->
+    <section class="py-8 sm:py-12 lg:py-16 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h3 class="text-4xl font-bold brand-purple mb-3">Layanan Kami</h3>
-                <p class="text-gray-600 text-lg">Solusi digital terlengkap untuk mengembangkan bisnis Anda</p>
+            <div class="text-center mb-8 sm:mb-12 lg:mb-16">
+                <h3 class="text-2xl sm:text-3xl lg:text-4xl font-bold brand-purple mb-2 sm:mb-3">Layanan Kami</h3>
+                <p class="text-gray-600 text-sm sm:text-base lg:text-lg px-4">Solusi digital terlengkap untuk mengembangkan bisnis Anda</p>
             </div>
 
             @php
@@ -91,23 +96,23 @@
             @php
                 $color = $categoryColors[$categoryName] ?? 'purple';
             @endphp
-            <!-- {{ $categoryName }} Category -->
-            <div class="mb-16">
-                <div class="flex items-center justify-between mb-8">
+            <!-- {{ $categoryName }} Category - Responsive -->
+            <div class="mb-8 sm:mb-12 lg:mb-16">
+                <div class="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
                     <div class="flex items-center">
-                        <div class="w-12 h-12 bg-{{ $color }}-100 rounded-xl flex items-center justify-center mr-4">
-                            <i class="fas fa-{{ $categoryIcons[$categoryName] ?? 'star' }} text-{{ $color }}-600 text-2xl"></i>
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 bg-{{ $color }}-100 rounded-xl flex items-center justify-center mr-3 sm:mr-4">
+                            <i class="fas fa-{{ $categoryIcons[$categoryName] ?? 'star' }} text-{{ $color }}-600 text-lg sm:text-2xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-2xl font-bold text-gray-900">{{ $categoryName }}</h4>
-                            <div class="h-1 w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-2"></div>
+                            <h4 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{{ $categoryName }}</h4>
+                            <div class="h-1 w-12 sm:w-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full mt-1 sm:mt-2"></div>
                         </div>
                     </div>
                     
                   
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     @foreach($categoryServices as $service)
                     <div class="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-purple-300 transition-all duration-300 hover:-translate-y-1 group">
                         <div class="flex items-start justify-between mb-4">
@@ -161,11 +166,10 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <!-- Footer -->
-    <footer class="bg-gray-900 text-white py-12">
+    <!-- Footer - Responsive -->
+    <footer class="bg-gray-900 text-white py-8 sm:py-10 lg:py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-6 sm:mb-8">
                 <div>
                     <div class="flex items-center space-x-3 mb-4">
                         <div class="w-10 h-10 bg-brand-purple rounded-lg flex items-center justify-center">

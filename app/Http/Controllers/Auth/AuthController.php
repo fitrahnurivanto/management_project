@@ -141,8 +141,12 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        // Hapus remember_me cookie untuk mencegah auto-login
+        $cookie = \Cookie::forget('remember_web');
+
         return redirect()->route('login')
-            ->with('success', 'Anda telah logout.');
+            ->with('success', 'Anda telah logout.')
+            ->withCookie($cookie);
     }
 
     /**
@@ -268,12 +272,12 @@ class AuthController extends Controller
             $user = User::where('email', $googleUser->getEmail())->first();
             
             if (!$user) {
-                // Create new user with employee role
+                // Create new user with CLIENT role (default for Google login)
                 $user = User::create([
                     'name' => $googleUser->getName(),
                     'email' => $googleUser->getEmail(),
                     'password' => Hash::make(Str::random(16)), // Random password
-                    'role' => 'employee', // Default role for Google login
+                    'role' => 'client', // Default role for Google login
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
                 ]);
@@ -286,17 +290,20 @@ class AuthController extends Controller
                     $user->name . ' mendaftar via Google'
                 );
             } else {
-                // Update google_id if not set
+                // Update google_id and avatar if not set (JANGAN override role yang sudah ada!)
                 if (!$user->google_id) {
                     $user->update([
                         'google_id' => $googleUser->getId(),
                         'avatar' => $googleUser->getAvatar(),
                     ]);
                 }
+                
+                // Refresh user dari database untuk memastikan role terbaru
+                $user->refresh();
             }
 
-            // Login user
-            Auth::login($user, true);
+            // Login user (tanpa remember untuk mencegah auto-login permanent)
+            Auth::login($user);
 
             // Log activity
             \App\Models\ActivityLog::createLog(

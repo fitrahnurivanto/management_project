@@ -106,7 +106,7 @@ class ClientController extends Controller
             abort(403);
         }
 
-        $client->load(['user', 'orders.items.service', 'projects.services']);
+        $client->load(['user', 'orders.items.service', 'projects']);
 
         // Calculate stats
         $stats = [

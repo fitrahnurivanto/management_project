@@ -104,9 +104,12 @@ class DashboardController extends Controller
         $completedProjects = (clone $projectQuery)->where('status', 'completed')->count();
         $activeProjects = (clone $projectQuery)->whereIn('status', ['in_progress', 'on_hold'])->count();
 
-        // Calculate costs and profit
+        // Calculate costs and profit from approved project expenses
         $projects = $projectQuery->get();
-        $totalCost = $projects->sum('actual_cost');
+        $projectIds = $projects->pluck('id');
+        $totalCost = \App\Models\ProjectExpense::whereIn('project_id', $projectIds)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
         $totalProfit = $totalRevenue - $totalCost;
         $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
 
@@ -121,7 +124,10 @@ class DashboardController extends Controller
             ->sum('paid_amount');
         
         $previousProjects = Project::whereBetween('created_at', $previousDateFilter)->get();
-        $previousCost = $previousProjects->sum('actual_cost');
+        $previousProjectIds = $previousProjects->pluck('id');
+        $previousCost = \App\Models\ProjectExpense::whereIn('project_id', $previousProjectIds)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
         $previousProfit = $previousRevenue - $previousCost;
         
         // Calculate percentage changes
@@ -159,9 +165,15 @@ class DashboardController extends Controller
             ->limit(10) // Top 10 services
             ->get();
 
-        // Top 5 most profitable projects
-        $topProjects = Project::select('*')
-            ->selectRaw('(budget - actual_cost) as profit')
+        // Top 5 most profitable projects - Calculate actual cost from expenses
+        $topProjects = Project::select('projects.*')
+            ->leftJoin('project_expenses', function($join) {
+                $join->on('projects.id', '=', 'project_expenses.project_id')
+                     ->where('project_expenses.approval_status', 'approved');
+            })
+            ->selectRaw('COALESCE(SUM(project_expenses.amount), 0) as total_expenses')
+            ->selectRaw('(projects.budget - COALESCE(SUM(project_expenses.amount), 0)) as profit')
+            ->groupBy('projects.id')
             ->orderByDesc('profit')
             ->limit(5)
             ->get();
@@ -341,6 +353,19 @@ class DashboardController extends Controller
             }
         }
 
+        // Project Count per Month (for line chart) - use same year filter as dashboard
+        // Use start_date if available, otherwise created_at
+        $projectChartYear = $year !== 'all' ? (int)$year : now()->year;
+        $monthlyProjectCount = [];
+        for ($m = 1; $m <= 12; $m++) {
+            // Use COALESCE to pick start_date or created_at
+            $count = DB::table('projects')
+                ->whereRaw('YEAR(COALESCE(start_date, created_at)) = ?', [$projectChartYear])
+                ->whereRaw('MONTH(COALESCE(start_date, created_at)) = ?', [$m])
+                ->count();
+            $monthlyProjectCount[] = $count;
+        }
+
         return view('admin.dashboard', compact(
             'totalRevenue',
             'totalProjects',
@@ -373,7 +398,9 @@ class DashboardController extends Controller
             'ongoingClasses',
             'classRevenue',
             'totalClassIncome',
-            'monthlyClassRevenue'
+            'monthlyClassRevenue',
+            'monthlyProjectCount',
+            'projectChartYear'
         ));
     }
 
@@ -461,7 +488,10 @@ class DashboardController extends Controller
         $activeProjects = (clone $projectQuery)->whereIn('status', ['in_progress', 'on_hold'])->count();
 
         $projects = $projectQuery->get();
-        $totalCost = $projects->sum('actual_cost');
+        $projectIds = $projects->pluck('id');
+        $totalCost = \App\Models\ProjectExpense::whereIn('project_id', $projectIds)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
         $totalProfit = $totalRevenue - $totalCost;
         $profitMargin = $totalRevenue > 0 ? ($totalProfit / $totalRevenue) * 100 : 0;
 
@@ -476,7 +506,10 @@ class DashboardController extends Controller
             ->sum('paid_amount');
         
         $previousProjects = Project::whereBetween('created_at', $previousDateFilter)->get();
-        $previousCost = $previousProjects->sum('actual_cost');
+        $previousProjectIds = $previousProjects->pluck('id');
+        $previousCost = \App\Models\ProjectExpense::whereIn('project_id', $previousProjectIds)
+            ->where('approval_status', 'approved')
+            ->sum('amount');
         $previousProfit = $previousRevenue - $previousCost;
         
         $revenueGrowth = $previousRevenue > 0 ? (($totalRevenue - $previousRevenue) / $previousRevenue) * 100 : 0;

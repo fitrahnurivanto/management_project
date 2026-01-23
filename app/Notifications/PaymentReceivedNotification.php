@@ -37,15 +37,17 @@ class PaymentReceivedNotification extends Notification implements ShouldQueue
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $clientName = $this->order->client ? $this->order->client->name : 'N/A';
+        
         return (new MailMessage)
             ->subject("💰 Pembayaran Diterima: Order #{$this->order->order_number}")
             ->greeting("Halo {$notifiable->name},")
             ->line("Pembayaran untuk order **#{$this->order->order_number}** telah diterima!")
             ->line("**Detail Pembayaran:**")
-            ->line("• Client: {$this->order->client->name}")
+            ->line("• Client: {$clientName}")
             ->line("• Total Order: Rp " . number_format($this->order->total_amount, 0, ',', '.'))
-            ->line("• Dibayar: Rp " . number_format($this->order->paid_amount, 0, ',', '.'))
-            ->line("• Sisa: Rp " . number_format($this->order->remaining_amount, 0, ',', '.'))
+            ->line("• Dibayar: Rp " . number_format($this->order->paid_amount ?? 0, 0, ',', '.'))
+            ->line("• Sisa: Rp " . number_format($this->order->remaining_amount ?? 0, 0, ',', '.'))
             ->line("• Status: " . strtoupper($this->order->payment_status))
             ->action('Lihat Order', route('admin.orders.index'))
             ->salutation('Salam, Management System');
@@ -61,6 +63,6 @@ class PaymentReceivedNotification extends Notification implements ShouldQueue
         return [
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
-            'client_name' => $this->order->client->name,
-            'paid_amount' => $this->order->paid_amount,
-            'remaining_amount' => $this->order->remaining_amount,
+            'client_name' => $this->order->client ? $this->order->client->name : 'N/A',
+            'paid_amount' => $this->order->paid_amount ?? 0,
+            'remaining_amount' => $this->order->remaining_amount ?? 0,

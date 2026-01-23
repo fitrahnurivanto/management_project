@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Finance;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProjectExpense;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
@@ -54,7 +55,12 @@ class ExpenseController extends Controller
             'approved_at' => now(),
         ]);
         
-        return back()->with('success', 'Expense berhasil diapprove');
+        // Notify admin who created the expense
+        if ($expense->createdBy) {
+            $expense->createdBy->notify(new \App\Notifications\PaymentReceivedNotification($expense));
+        }
+        
+        return back()->with('success', 'Expense berhasil diapprove dan admin dinotifikasi');
     }
     
     public function reject(Request $request, ProjectExpense $expense)
@@ -74,6 +80,11 @@ class ExpenseController extends Controller
             'rejection_reason' => $validated['rejection_reason'],
         ]);
         
-        return back()->with('success', 'Expense berhasil direject');
+        // Notify admin who created the expense
+        if ($expense->createdBy) {
+            $expense->createdBy->notify(new \App\Notifications\PaymentReceivedNotification($expense));
+        }
+        
+        return back()->with('success', 'Expense berhasil direject dan admin dinotifikasi');
     }
 }

@@ -6,10 +6,12 @@ use App\Models\Order;
 use App\Models\Client;
 use App\Models\Service;
 use App\Models\OrderItem;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Presenters\OrderPresenter;
+use App\Notifications\OrderReceivedNotification;
 
 class OrderController extends Controller
 {
@@ -226,10 +228,16 @@ class OrderController extends Controller
                 $order->items()->create($item);
             }
 
+            // Send notification to admins
+            $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new OrderReceivedNotification($order));
+            }
+
             DB::commit();
 
             return redirect()->route('orders.show', $order)
-                ->with('success', 'Pesanan berhasil dibuat. Menunggu konfirmasi admin.');
+                ->with('success', 'Pesanan berhasil dibuat. Admin akan segera memproses pesanan Anda.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -288,6 +296,11 @@ class OrderController extends Controller
                 'confirmed_at' => now(),
                 'confirmed_by' => auth()->id(),
             ]);
+
+            // Send notification to client
+            if ($order->client && $order->client->user) {
+                $order->client->user->notify(new \App\Notifications\PaymentReceivedNotification($order));
+            }
 
             DB::commit();
 

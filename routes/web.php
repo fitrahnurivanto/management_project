@@ -53,12 +53,14 @@ Route::middleware(['auth'])->group(function () {
     // Division switcher route
     Route::post('/set-division', [DivisionController::class, 'setDivision'])->name('division.set');
     
-    // Dashboard routes - role based (Admin & Employee only)
+    // Dashboard routes - role based (Admin, Employee & Finance)
     Route::get('/dashboard', function() {
         $user = auth()->user();
         
         if ($user->isAdmin()) {
             return redirect()->route('admin.dashboard');
+        } elseif ($user->role === 'finance') {
+            return redirect()->route('finance.dashboard');
         } else {
             return redirect()->route('employee.dashboard');
         }
@@ -200,6 +202,22 @@ Route::middleware(['auth'])->group(function () {
         // Project Chat (Global - Client, Team & Admin)
         Route::post('/projects/{project}/chat', [\App\Http\Controllers\Client\ClientProjectController::class, 'storeChat'])->name('projects.chat');
         Route::get('/projects/{project}/chat/messages', [\App\Http\Controllers\Client\ClientProjectController::class, 'getChats'])->name('projects.chat.messages');
+    });
+
+    // Finance routes
+    Route::middleware(['finance'])->prefix('finance')->name('finance.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Finance\FinanceDashboardController::class, 'index'])->name('dashboard');
+        
+        // Expense Management
+        Route::get('/expenses', [\App\Http\Controllers\Finance\ExpenseController::class, 'index'])->name('expenses.index');
+        Route::post('/expenses/{expense}/approve', [\App\Http\Controllers\Finance\ExpenseController::class, 'approve'])->name('expenses.approve');
+        Route::post('/expenses/{expense}/reject', [\App\Http\Controllers\Finance\ExpenseController::class, 'reject'])->name('expenses.reject');
+        
+        // Payment Requests
+        Route::get('/payment-requests', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'index'])->name('payment-requests.index');
+        Route::get('/payment-requests/{paymentRequest}', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'show'])->name('payment-requests.show');
+        Route::post('/payment-requests/{paymentRequest}/mark-as-paid', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'markAsPaid'])->name('payment-requests.mark-as-paid');
+        Route::post('/payment-requests/{paymentRequest}/mark-as-processing', [\App\Http\Controllers\Admin\PaymentRequestController::class, 'markAsProcessing'])->name('payment-requests.mark-as-processing');
     });
 });
 

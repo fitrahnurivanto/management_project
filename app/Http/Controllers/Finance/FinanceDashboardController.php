@@ -61,11 +61,11 @@ class FinanceDashboardController extends Controller
 
         // Payment Requests (approved but not paid)
         $pendingPayments = PaymentRequest::where('status', 'approved')
-            ->where('payment_status', 'unpaid')
+            ->whereNull('paid_at')
             ->sum('approved_amount');
 
         $pendingPaymentCount = PaymentRequest::where('status', 'approved')
-            ->where('payment_status', 'unpaid')
+            ->whereNull('paid_at')
             ->count();
 
         // Net Profit
@@ -81,7 +81,7 @@ class FinanceDashboardController extends Controller
         // Recent Payment Requests (approved, waiting payment)
         $recentPaymentRequests = PaymentRequest::with(['user', 'project', 'clas'])
             ->where('status', 'approved')
-            ->where('payment_status', 'unpaid')
+            ->whereNull('paid_at')
             ->latest()
             ->take(5)
             ->get();

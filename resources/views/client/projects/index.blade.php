@@ -79,7 +79,7 @@
                             @if($project->end_date)
                                 <small class="text-gray-600 flex items-center">
                                     <i class="fas fa-calendar-check mr-2 text-gray-400"></i>
-                                    Deadline: {{ $project->end_date->format('d M Y') }}
+                                    Deadline: {{ $project->end_date ? $project->end_date->format('d M Y') : 'Belum ditentukan' }}
                                 </small>
                             @endif
                         </div>

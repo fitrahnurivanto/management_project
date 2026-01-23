@@ -368,7 +368,7 @@
                             <div class="text-sm text-gray-600">
                                 {{ $project->start_date ? $project->start_date->format('d M Y') : '-' }}
                                 @if($project->end_date)
-                                    <br>s/d {{ $project->end_date->format('d M Y') }}
+                                    <br>s/d {{ $project->end_date ? $project->end_date->format('d M Y') : 'Belum ditentukan' }}
                                 @endif
                             </div>
                         </td>

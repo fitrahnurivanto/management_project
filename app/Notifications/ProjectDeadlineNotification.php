@@ -30,6 +30,8 @@ class ProjectDeadlineNotification extends Notification implements ShouldQueue
     {
         $urgencyLabel = $this->daysUntilDeadline <= 1 ? '⚠️ URGENT' : '⏰ REMINDER';
         $dayText = $this->daysUntilDeadline == 1 ? 'BESOK' : "H-{$this->daysUntilDeadline}";
+        $clientName = $this->project->client ? $this->project->client->name : 'N/A';
+        $deadline = $this->project->end_date ? $this->project->end_date->format('d F Y') : 'Belum ditentukan';
         
         return (new MailMessage)
             ->subject("{$urgencyLabel}: Deadline Project {$this->project->project_name} - {$dayText}")
@@ -37,8 +39,8 @@ class ProjectDeadlineNotification extends Notification implements ShouldQueue
             ->line("Project **{$this->project->project_name}** akan mencapai deadline dalam **{$this->daysUntilDeadline} hari**!")
             ->line("**Detail Project:**")
             ->line("• Kode Project: {$this->project->project_code}")
-            ->line("• Client: {$this->project->client->name}")
-            ->line("• Deadline: " . $this->project->end_date->format('d F Y'))
+            ->line("• Client: {$clientName}")
+            ->line("• Deadline: " . $deadline)
             ->line("• Status: " . strtoupper($this->project->status))
             ->line("• Budget: Rp " . number_format($this->project->budget, 0, ',', '.'))
             ->action('Lihat Project', route('admin.projects.show', $this->project->id))

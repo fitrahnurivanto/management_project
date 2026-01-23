@@ -50,6 +50,7 @@ class ProjectStatusChangedNotification extends Notification implements ShouldQue
         ];
 
         $emoji = $statusEmoji[$this->newStatus] ?? '🔄';
+        $clientName = $this->project->client ? $this->project->client->name : 'N/A';
 
         return (new MailMessage)
             ->subject("{$emoji} Status Project Berubah: {$this->project->project_name}")
@@ -60,7 +61,7 @@ class ProjectStatusChangedNotification extends Notification implements ShouldQue
             ->line("• Ke: " . strtoupper($this->newStatus))
             ->line("**Detail Project:**")
             ->line("• Kode: {$this->project->project_code}")
-            ->line("• Client: {$this->project->client->name}")
+            ->line("• Client: {$clientName}")
             ->action('Lihat Project', route('admin.projects.show', $this->project->id))
             ->salutation('Salam, Management System');
     }

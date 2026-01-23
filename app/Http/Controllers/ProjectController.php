@@ -8,6 +8,8 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\ProjectCreatedNotification;
+use App\Notifications\ProjectStatusChangedNotification;
 
 class ProjectController extends Controller
 {
@@ -182,10 +184,15 @@ class ProjectController extends Controller
                 auth()->user()->name . ' membuat project baru: ' . $project->project_name
             );
 
+            // Send notification to client
+            if ($project->client && $project->client->user) {
+                $project->client->user->notify(new ProjectCreatedNotification($project));
+            }
+
             DB::commit();
 
             return redirect()->route('admin.projects.show', $project)
-                ->with('success', 'Project berhasil dibuat. Silakan buat tim project.');
+                ->with('success', 'Project berhasil dibuat dan notifikasi terkirim ke client.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -290,6 +297,8 @@ class ProjectController extends Controller
             abort(403);
         }
 
+        $oldStatus = $project->status;
+
         $validated = $request->validate([
             'status' => 'required|in:pending,in_progress,completed,cancelled,on_hold',
         ]);
@@ -304,6 +313,11 @@ class ProjectController extends Controller
             $project->updateActualCost();
         }
 
+        // Send notification to client if status changed
+        if ($oldStatus !== $validated['status'] && $project->client && $project->client->user) {
+            $project->client->user->notify(new ProjectStatusChangedNotification($project, $oldStatus, $validated['status']));
+        }
+
         // Log activity
         \App\Models\ActivityLog::createLog(
             'update_status',
@@ -312,7 +326,7 @@ class ProjectController extends Controller
             auth()->user()->name . ' mengubah status project ' . $project->project_name . ' menjadi ' . $validated['status']
         );
 
-        return redirect()->back()->with('success', 'Status project berhasil diupdate.');
+        return redirect()->back()->with('success', 'Status project berhasil diupdate dan client dinotifikasi.');
     }
 
     /**
@@ -323,7 +337,7 @@ class ProjectController extends Controller
         if (!auth()->user()->isAdmin()) {
             abort(403);
         }
-
+        $oldStatus = $project->status;
         $validated = $request->validate([
             'status_notes' => 'nullable|string|max:500',
         ]);
@@ -405,6 +419,12 @@ class ProjectController extends Controller
             'user_id' => $validated['user_id'],
             'role' => $validated['role'],
         ]);
+
+        // Send notification to assigned user
+        $assignedUser = User::find($validated['user_id']);
+        if ($assignedUser) {
+            $assignedUser->notify(new ProjectCreatedNotification($project));
+        }
 
         // Log activity
         $user = User::find($validated['user_id']);

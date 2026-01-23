@@ -490,13 +490,18 @@
         </div>
     </div>
     
-    <!-- Placeholder for future chart -->
+    <!-- Project Count per Month Chart -->
     <div class="bg-white rounded-2xl shadow-sm">
         <div class="px-6 py-4 border-b border-gray-200">
-            <h5 class="text-lg font-semibold text-gray-800"><i class="fas fa-chart-area mr-2"></i>Available Space</h5>
+            <h5 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-chart-line mr-2"></i>Jumlah Project per Bulan ({{ $projectChartYear }})
+            </h5>
+            <p class="text-xs text-gray-500 mt-1">Gunakan filter tahun di atas untuk melihat data tahun lain</p>
         </div>
         <div class="p-6">
-            <p class="text-gray-500 text-center py-8">Area untuk grafik tambahan</p>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="projectCountChart"></canvas>
+            </div>
         </div>
     </div>
 </div>
@@ -1101,7 +1106,92 @@
         });
     }
 
-    // 6. Weekly Target vs Actual (Line Chart)
+    // 6. Project Count per Month (Line Chart)
+    const projectCountCtx = document.getElementById('projectCountChart');
+    if (projectCountCtx) {
+        const monthlyProjectData = {!! json_encode($monthlyProjectCount ?? []) !!};
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        
+        // Check if data exists
+        if (monthlyProjectData.length === 0 || monthlyProjectData.every(val => val === 0)) {
+            projectCountCtx.parentElement.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada data project untuk tahun {{ $projectChartYear ?? date("Y") }}</p>';
+        } else {
+            dashboardCharts.projectCount = new Chart(projectCountCtx, {
+            type: 'line',
+            data: {
+                labels: monthNames,
+                datasets: [{
+                    label: 'Jumlah Project',
+                    data: monthlyProjectData,
+                    borderColor: 'rgba(79, 70, 229, 1)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: 'rgba(79, 70, 229, 1)',
+                    pointHoverBorderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' Project';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                if (Number.isInteger(value)) {
+                                    return value;
+                                }
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        }
+    }
+
+    // 7. Weekly Target vs Actual (Line Chart)
     const weeklyTargetCtx = document.getElementById('weeklyTargetChart');
     if (weeklyTargetCtx && {{ $selectedTargetAmount > 0 ? 'true' : 'false' }}) {
         const weeklyData = {!! json_encode($weeklyData) !!};
