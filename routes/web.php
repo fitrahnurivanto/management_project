@@ -16,16 +16,10 @@ use App\Http\Controllers\TrainerController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\DivisionController;
 
-// Public routes - Landing Page
-Route::get('/', [LandingController::class, 'index'])->name('home');
-Route::post('/submit-order', [LandingController::class, 'submit'])->name('landing.submit');
-
-// Academy Registration Routes (Public - Anyone can register)
-Route::get('/daftar/magang', [RegistrationController::class, 'magangForm'])->name('admin.registrations.magang');
-Route::post('/daftar/magang', [RegistrationController::class, 'storeMagang'])->name('admin.registrations.magang.store');
-Route::get('/daftar/sertifikasi', [RegistrationController::class, 'sertifikasiForm'])->name('admin.registrations.sertifikasi');
-Route::post('/daftar/sertifikasi', [RegistrationController::class, 'storeSertifikasi'])->name('admin.registrations.sertifikasi.store');
-
+// Public routes - Redirect to Login
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
 // Authentication routes (Admin & Employee only)
 Route::middleware('guest')->group(function () {
@@ -71,13 +65,23 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/dashboard/save-target', [DashboardController::class, 'saveTarget'])->name('dashboard.save-target');
         Route::get('/dashboard/calendar-events', [DashboardController::class, 'getCalendarEvents'])->name('dashboard.calendar-events');
         
-        // Orders management (now includes pending review from landing page)
+        // Orders management (Admin creates orders manually)
+        Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+        Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders/{order}/confirm', [OrderController::class, 'confirmPayment'])->name('orders.confirm');
         Route::post('/orders/{order}/reject', [OrderController::class, 'rejectOrder'])->name('orders.reject');
         Route::get('/orders/{order}/installment-info', [OrderController::class, 'getInstallmentInfo'])->name('orders.installment-info');
         Route::post('/orders/{order}/update-installment', [OrderController::class, 'updateInstallment'])->name('orders.update-installment');
+        
+        // Services & Packages Management
+        Route::get('/services', [App\Http\Controllers\ServiceController::class, 'index'])->name('services.index');
+        Route::get('/services/{service}/edit', [App\Http\Controllers\ServiceController::class, 'edit'])->name('services.edit');
+        Route::put('/services/{service}', [App\Http\Controllers\ServiceController::class, 'update'])->name('services.update');
+        Route::post('/services/{service}/packages', [App\Http\Controllers\ServiceController::class, 'storePackage'])->name('services.packages.store');
+        Route::put('/packages/{package}', [App\Http\Controllers\ServiceController::class, 'updatePackage'])->name('packages.update');
+        Route::delete('/packages/{package}', [App\Http\Controllers\ServiceController::class, 'destroyPackage'])->name('packages.destroy');
         
         // PKS Management
         Route::get('/orders/{order}/pks', [OrderController::class, 'showPksForm'])->name('orders.pks.form');

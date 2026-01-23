@@ -141,107 +141,158 @@ class OrderController extends Controller
     /**
      * Show the form for creating a new order (for client).
      */
+    /**
+     * Show create order form (Admin only).
+     */
     public function create()
     {
-        $services = Service::with('category')
+        $services = Service::with(['category', 'packages'])
             ->active()
             ->ordered()
-            ->get()
-            ->groupBy('category.name');
+            ->get();
 
-        return view('orders.create', compact('services'));
+        return view('admin.orders.create', compact('services'));
     }
 
     /**
-     * Store a newly created order.
+     * Store a newly created order (Admin creates order manually).
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'company_address' => 'required|string',
-            'business_type' => 'nullable|string',
-            'npwp' => 'nullable|string',
-            'contact_person' => 'required|string',
-            'contact_phone' => 'required|string',
-            'services' => 'required|array|min:1',
-            'services.*.service_id' => 'required|exists:services,id',
-            'services.*.quantity' => 'required|integer|min:1',
-            'services.*.specifications' => 'nullable|string',
-            'payment_method' => 'required|string',
-            'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-            'notes' => 'nullable|string',
+            // Client info
+            'client_name' => 'required|string|max:255',
+            'client_email' => 'required|email|max:255',
+            'client_phone' => 'required|string|max:20',
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string',
+            
+            // Service info
+            'service_id' => 'required|exists:services,id',
+            'package_id' => 'nullable|exists:service_packages,id',
+            'description' => 'nullable|string',
+            
+            // Payment info
+            'total_price' => 'required|string', // Format: 1.500.000
+            'payment_type' => 'required|in:full,installment',
+            'installment_count' => 'required_if:payment_type,installment|nullable|integer|min:2|max:4',
+            'payment_proof' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
+
+        // Clean total_price (remove dots from format 1.500.000)
+        $totalAmount = (int) str_replace('.', '', $validated['total_price']);
 
         DB::beginTransaction();
         try {
-            // Create or update client
-            $client = Client::firstOrCreate(
-                ['user_id' => auth()->id()],
+            // 1. Create or find client
+            $user = User::firstOrCreate(
+                ['email' => $validated['client_email']],
                 [
-                    'company_name' => $validated['company_name'],
-                    'company_address' => $validated['company_address'],
-                    'business_type' => $validated['business_type'] ?? null,
-                    'npwp' => $validated['npwp'] ?? null,
-                    'contact_person' => $validated['contact_person'],
-                    'contact_phone' => $validated['contact_phone'],
+                    'name' => $validated['client_name'],
+                    'password' => bcrypt('password123'), // Default password
+                    'role' => 'client',
+                    'phone' => $validated['client_phone'],
                 ]
             );
 
-            // Upload payment proof
-            $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+            $client = Client::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'name' => $validated['client_name'],
+                    'email' => $validated['client_email'],
+                    'phone' => $validated['client_phone'],
+                    'company_name' => $validated['company_name'] ?? null,
+                    'company_address' => $validated['company_address'] ?? null,
+                    'contact_person' => $validated['client_name'],
+                    'contact_phone' => $validated['client_phone'],
+                ]
+            );
 
-            // Calculate total amount
-            $totalAmount = 0;
-            $orderItems = [];
-
-            foreach ($validated['services'] as $serviceData) {
-                $service = Service::find($serviceData['service_id']);
-                $quantity = $serviceData['quantity'];
-                $price = $service->base_price;
-                $subtotal = $price * $quantity;
-                
-                $totalAmount += $subtotal;
-                
-                $orderItems[] = [
-                    'service_id' => $service->id,
-                    'quantity' => $quantity,
-                    'price' => $price,
-                    'subtotal' => $subtotal,
-                    'specifications' => $serviceData['specifications'] ?? null,
-                ];
+            // 2. Upload payment proof if exists
+            $paymentProofPath = null;
+            if ($request->hasFile('payment_proof')) {
+                $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
             }
 
-            // Create order
+            // 3. Determine payment status
+            $paymentStatus = $paymentProofPath ? 'pending_review' : 'pending';
+
+            // 4. Get service and package info
+            $service = Service::find($validated['service_id']);
+            $package = $validated['package_id'] ? \App\Models\ServicePackage::find($validated['package_id']) : null;
+
+            // Determine division from service category
+            $division = $service->category ? $service->category->division : 'agency';
+
+            // 5. Create order
             $order = Order::create([
                 'client_id' => $client->id,
                 'order_number' => Order::generateOrderNumber(),
                 'total_amount' => $totalAmount,
-                'payment_status' => 'pending',
-                'payment_method' => $validated['payment_method'],
+                'payment_status' => $paymentStatus,
+                'payment_type' => $validated['payment_type'],
+                'payment_method' => 'transfer', // Default transfer
                 'payment_proof' => $paymentProofPath,
-                'notes' => $validated['notes'] ?? null,
+                'notes' => $validated['description'],
+                'division' => $division,
+                'order_type' => 'order', // Manual order by admin
             ]);
 
-            // Create order items
-            foreach ($orderItems as $item) {
-                $order->items()->create($item);
+            // 6. Create order item
+            $order->items()->create([
+                'service_id' => $service->id,
+                'service_package_id' => $package ? $package->id : null,
+                'quantity' => 1,
+                'price' => $totalAmount,
+                'subtotal' => $totalAmount,
+                'specifications' => $validated['description'],
+            ]);
+
+            // 7. Handle installment
+            if ($validated['payment_type'] === 'installment') {
+                $installmentCount = $validated['installment_count'];
+                $amountPerInstallment = $totalAmount / $installmentCount;
+
+                // Set initial DP info
+                $order->update([
+                    'paid_installments' => 0,
+                    'remaining_amount' => $totalAmount,
+                ]);
+
+                for ($i = 1; $i <= $installmentCount; $i++) {
+                    $order->installments()->create([
+                        'installment_number' => $i,
+                        'amount' => $amountPerInstallment,
+                        'due_date' => now()->addMonths($i),
+                        'status' => 'pending',
+                    ]);
+                }
             }
 
-            // Send notification to admins
-            $admins = User::whereIn('role', ['admin', 'superadmin'])->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new OrderReceivedNotification($order));
+            // 8. Log activity
+            \App\Models\ActivityLog::createLog(
+                'order_created',
+                'Order',
+                $order->id,
+                auth()->user()->name . ' membuat order baru untuk ' . $client->name
+            );
+
+            // 9. Send notification to client
+            if ($client->user) {
+                $client->user->notify(new OrderReceivedNotification($order));
             }
 
             DB::commit();
 
-            return redirect()->route('orders.show', $order)
-                ->with('success', 'Pesanan berhasil dibuat. Admin akan segera memproses pesanan Anda.');
+            return redirect()->route('admin.orders.show', $order)
+                ->with('success', 'Order berhasil dibuat! Data client: ' . $client->email . ' (password: password123)');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+            \Log::error('Create Order Error: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
 

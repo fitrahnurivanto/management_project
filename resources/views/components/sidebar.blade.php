@@ -77,7 +77,13 @@
             @if(auth()->user()->isSuperAdmin() || auth()->user()->isAgencyAdmin())
                 @if($activeDivision === 'agency' || auth()->user()->isAgencyAdmin())
             <li class="mx-2.5 my-1">
-                <a href="{{ route('admin.orders.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.orders.*') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
+                <a href="{{ route('admin.orders.create') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-green-50 hover:text-green-600 hover:translate-x-1 {{ request()->routeIs('admin.orders.create') ? 'bg-green-50 text-green-600 font-semibold' : '' }}">
+                    <i class="fas fa-plus-circle w-6 text-lg"></i>
+                    <span class="ml-2.5">Create Order</span>
+                </a>
+            </li>
+            <li class="mx-2.5 my-1">
+                <a href="{{ route('admin.orders.index') }}" class="flex items-center px-4 py-3 text-gray-700 no-underline rounded-xl transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:translate-x-1 {{ request()->routeIs('admin.orders.index', 'admin.orders.show') ? 'bg-indigo-50 text-indigo-600 font-semibold' : '' }}">
                     <i class="fas fa-shopping-cart w-6 text-lg"></i>
                     <span class="ml-2.5">Orders</span>
                     @php
