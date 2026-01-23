@@ -156,12 +156,24 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        } elseif ($user->isClient()) {
-            return redirect()->route('client.dashboard');
-        } else {
-            return redirect()->route('employee.dashboard');
+        // Redirect based on role
+        switch ($user->role) {
+            case 'admin':  // Super Admin, Admin Agency, Admin Academy
+                return redirect()->route('admin.dashboard');
+            
+            case 'finance':
+                return redirect()->route('finance.dashboard');
+            
+            case 'client':
+                return redirect()->route('client.dashboard');
+            
+            case 'employee':
+                return redirect()->route('employee.dashboard');
+            
+            default:
+                // Fallback: logout user dengan role tidak valid
+                Auth::logout();
+                return redirect()->route('login')->withErrors(['error' => 'Role tidak valid']);
         }
     }
 
@@ -277,7 +289,7 @@ class AuthController extends Controller
                     'name' => $googleUser->getName(),
                     'email' => $googleUser->getEmail(),
                     'password' => Hash::make(Str::random(16)), // Random password
-                    'role' => 'client', // Default role for Google login
+                    'role' => 'client', // Default role: client (sesuai ENUM)
                     'google_id' => $googleUser->getId(),
                     'avatar' => $googleUser->getAvatar(),
                 ]);

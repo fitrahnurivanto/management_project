@@ -29,10 +29,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center space-x-2 sm:space-x-3">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 bg-brand-purple rounded-lg flex items-center justify-center">
-                        <i class="fas fa-lightbulb text-white text-lg sm:text-xl"></i>
-                    </div>
-                    <h1 class="text-lg sm:text-2xl font-bold brand-purple">CREATIVEMU</h1>
+                    <img src="{{ asset('storage/images/logo.png') }}" alt="CREATIVEMU Logo" class="h-10 sm:h-12 object-contain">
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-4">
                     <a href="https://wa.me/6289618472759?text=Halo%20Admin%20CREATIVEMU%2C%0A%0ASaya%20ingin%20berkonsultasi%20dan%20bertanya%20mengenai%20layanan%20digital%20marketing.%0A%0ATerima%20kasih." target="_blank" class="flex items-center space-x-1 sm:space-x-2 bg-green-500 hover:bg-green-600 text-white px-3 py-2 sm:px-4 rounded-lg transition text-sm sm:text-base">
@@ -54,8 +51,8 @@
     <section class="bg-gradient-to-r from-purple-900 via-purple-700 to-pink-600 text-white py-12 sm:py-16 lg:py-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="mb-4 sm:mb-6">
-                <div class="inline-block w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-3 sm:mb-4">
-                    <i class="fas fa-lightbulb text-white text-3xl sm:text-4xl"></i>
+                <div class="inline-block bg-white rounded-2xl p-3 sm:p-4 shadow-lg mb-3 sm:mb-4">
+                    <img src="{{ asset('storage/images/logo.png') }}" alt="CREATIVEMU Logo" class="h-16 sm:h-20 w-auto object-contain">
                 </div>
             </div>
             <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 px-2">Tingkatkan Bisnis Anda Bersama CREATIVEMU</h2>

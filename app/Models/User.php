@@ -102,7 +102,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is admin.
+     * Check if user is admin (any type of admin).
      */
     public function isAdmin()
     {
@@ -171,6 +171,14 @@ class User extends Authenticatable
     public function isEmployee()
     {
         return $this->role === 'employee';
+    }
+
+    /**
+     * Check if user is finance.
+     */
+    public function isFinance()
+    {
+        return $this->role === 'finance';
     }
 
     /**
